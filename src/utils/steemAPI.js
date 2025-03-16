@@ -2,59 +2,59 @@ import axios from "axios";
 
 // Steem API Endpoint
 const STEEM_API = "https://api.steemit.com";
+const LOTTERY_ACCOUNT = "winwithsteemit"; // The official lottery account
 
-// Function to fetch latest transactions
-
+// ✅ Fetch Latest Transactions
 export async function fetchSteemTransactions() {
   try {
     const response = await axios.get("https://api.steemscan.com/getRecentTransactions");
     const transactions = response.data;
 
+    if (!transactions || transactions.length === 0) {
+      console.warn("⚠ No transactions found.");
+      return [];
+    }
+
     return transactions
-      .filter((tx) => tx.memo.startsWith("Lottery")) // ✅ Only valid memos
+      .filter((tx) => 
+        tx.to === LOTTERY_ACCOUNT && 
+        tx.memo.startsWith("Lottery") // ✅ Only process memos starting with "Lottery"
+      )
       .map((tx) => ({
         username: tx.from,
-        tickets: parseInt(tx.amount), // STEEM amount = tickets
-        memo: tx.memo,
+        tickets: parseFloat(tx.amount.split(" ")[0]), // Extract ticket count from STEEM amount
+        memo: tx.memo, // Store memo for reference
       }));
   } catch (error) {
-    console.error("Error fetching transactions:", error);
+    console.error("❌ Error fetching transactions:", error);
     return [];
   }
 }
 
-// **Processing Transactions**
-function processTransactions(transactions) {
+// ✅ Process Transactions to Validate Entries
+export function processTransactions(transactions) {
   const validEntries = [];
 
-  transactions.forEach(([_, tx]) => {
-    const { op } = tx;
-    if (op[0] === "transfer") {
-      const { from, to, amount, memo } = op[1];
+  transactions.forEach((tx) => {
+    const { username, tickets, memo } = tx;
 
-      // ✅ Ensure transaction is TO the correct account
-      if (to === "winwithsteemit") {
-        const steemAmount = parseFloat(amount.split(" ")[0]); // Extract STEEM amount
-        const isValidMemo = /^\d{9}$/.test(memo); // Check if memo is correctly encrypted
+    // ✅ Validate Memo Format: Ensure it's encrypted correctly (e.g., "Lottery 547 x2 x20250314")
+    const isValidMemo = memo.match(/^Lottery \d{3} x\d+ x\d{8}$/);
 
-        // ✅ Register valid lottery entry
-        if (steemAmount > 0 && isValidMemo) {
-          validEntries.push({ username: from, tickets: steemAmount, memo });
-        }
-      }
+    if (tickets > 0 && isValidMemo) {
+      validEntries.push({ username, tickets, memo });
     }
   });
 
   return validEntries;
 }
 
-// Function to fetch and calculate top buyers
+// ✅ Fetch & Calculate Top Buyers
 export async function fetchTopBuyers() {
   try {
-    const transactions = await fetchSteemTransactions(); // Reuse transaction fetching logic
+    const transactions = await fetchSteemTransactions();
     const buyerStats = {};
 
-    // Process each transaction
     transactions.forEach(({ username, tickets }) => {
       if (!buyerStats[username]) {
         buyerStats[username] = 0;
@@ -62,15 +62,13 @@ export async function fetchTopBuyers() {
       buyerStats[username] += tickets;
     });
 
-    // Sort buyers by total tickets purchased
-    const sortedBuyers = Object.entries(buyerStats)
+    // ✅ Sort & Return Top 5 Buyers
+    return Object.entries(buyerStats)
       .sort((a, b) => b[1] - a[1]) // Sort in descending order
-      .slice(0, 5) // Get the top 5 buyers
+      .slice(0, 5) // Get Top 5
       .map(([username, tickets]) => ({ username, tickets }));
-
-    return sortedBuyers;
   } catch (error) {
-    console.error("Error fetching top buyers:", error);
+    console.error("❌ Error fetching top buyers:", error);
     return [];
   }
 }

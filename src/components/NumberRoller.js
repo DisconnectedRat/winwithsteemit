@@ -7,7 +7,8 @@ const NumberRoller = ({ onSelect }) => {
   const [selectedTickets, setSelectedTickets] = useState([]);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [memo, setMemo] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [copyMemoText, setCopyMemoText] = useState("Copy Memo");
+  const [copyAccountText, setCopyAccountText] = useState("Copy Account");
   const lotteryAccount = "winwithsteemit"; // Steemit lottery account
 
   // Handle number selection
@@ -31,32 +32,31 @@ const NumberRoller = ({ onSelect }) => {
     }
   };
 
-// **Encrypt Memo & Calculate STEEM**
-const handleConfirmPurchase = () => {
-  if (selectedTickets.length === 0) return;
+  // **Encrypt Memo & Calculate STEEM**
+  const handleConfirmPurchase = () => {
+    if (selectedTickets.length === 0) return;
 
-  const firstTicket = parseInt(selectedTickets[0]); // Convert to number
-  const totalSTEEM = selectedTickets.length; // Total STEEM required
-  const todayDate = new Date().toISOString().split("T")[0].replace(/-/g, ""); // YYYYMMDD format
+    const firstTicket = parseInt(selectedTickets[0]); // Convert to number
+    const totalSTEEM = selectedTickets.length; // Total STEEM required
+    const todayDate = new Date().toISOString().split("T")[0].replace(/-/g, ""); // YYYYMMDD format
 
-  // **Encrypt Memo using multiplication**
-  const encryptedNumber = firstTicket * totalSTEEM * parseInt(todayDate);
+    // **Encrypt Memo using multiplication**
+    const encryptedNumber = firstTicket * totalSTEEM * parseInt(todayDate);
 
-  // **Ensure memo starts with "Lottery" for API tracking**
-  const finalMemo = `Lottery ${encryptedNumber}`;
+    // **Ensure memo starts with "Lottery" for API tracking**
+    const finalMemo = `Lottery ${encryptedNumber}`;
 
-  setMemo(finalMemo); // Store updated memo
-  setIsConfirmed(true);
-};
+    setMemo(finalMemo); // Store updated memo
+    setIsConfirmed(true);
+  };
 
-  // **Copy Memo to Clipboard**
-  const copyMemoToClipboard = () => {
-    const memo = generateMemo();
-    if (!memo) return;
-    navigator.clipboard.writeText(memo);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };  
+  // **Copy Text to Clipboard Function**
+  const copyToClipboard = (text, setButtonText) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setButtonText("Copied! ✅");
+      setTimeout(() => setButtonText("Copy"), 2000); // Reset after 2s
+    });
+  };
 
   return (
     <div className="flex flex-col items-center">
@@ -76,9 +76,7 @@ const handleConfirmPurchase = () => {
               <span className="text-gray-400 text-lg">{(num + 9) % 10}</span>
               <span
                 className={`font-bold ${
-                  index === 0
-                    ? "text-red-500 text-4xl"
-                    : "text-black text-4xl"
+                  index === 0 ? "text-red-500 text-4xl" : "text-black text-4xl"
                 }`}
               >
                 {num}
@@ -126,30 +124,49 @@ const handleConfirmPurchase = () => {
         Confirm & Purchase
       </button>
 
-      {/* **Payment Instructions** */}
+      {/* **Payment Instructions (AFTER PURCHASE) - Fixed Functionality** */}
       {isConfirmed && (
-        <div className="mt-4 p-4 bg-gray-100 border rounded">
-          <p className="font-bold">💰 Payment Instructions:</p>
-          <p>
-            Send <strong>{selectedTickets.length} STEEM</strong> to{" "}
-            <strong>@{lotteryAccount}</strong> with the memo: 
-            Once your payment is completed, check the 
-            <strong>“Today’s Entrants”</strong> page to ensure your 
-            transaction and ticket numbers are recorded.
+        <div className="mt-4 p-4 bg-gray-100 border border-gray-300 rounded-lg shadow-md">
+          <h3 className="text-lg font-bold text-gray-700 mb-2">💰 Payment Instructions:</h3>
+          <p className="text-gray-600">
+            Send <strong>{selectedTickets.length} STEEM</strong> to the <strong>winwithsteemit</strong> account  
+            account via your wallet. Be sure to copy and paste your memo in the transfer. 
+            Once the payment is complete, verify your transaction on the <strong>Today&apos;s Entrants</strong> page. 
           </p>
-          <div className="flex mt-2">
+
+          {/* Copy Account Section */}
+          <div className="flex items-center mt-2">
             <input
               type="text"
-              value={memo}
+              value={lotteryAccount}
               readOnly
-              className="border px-2 py-1 flex-1"
+              className="border px-3 py-2 rounded-md w-full text-gray-700"
             />
             <button
-              className="bg-blue-500 text-white px-2 py-1 ml-2 rounded"
-              onClick={copyMemoToClipboard}
+              onClick={() => copyToClipboard(lotteryAccount, setCopyAccountText)}
+              className="ml-2 px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
             >
-              {copied ? "Copied!" : "Copy Memo"}
+              {copyAccountText}
             </button>
+          </div>
+
+          {/* Copy Memo Section */}
+          <div className="mt-4">
+            <p className="text-gray-600">Memo:</p>
+            <div className="flex items-center">
+              <input
+                type="text"
+                value={memo}
+                readOnly
+                className="border px-3 py-2 rounded-md w-full text-gray-700"
+              />
+              <button
+                onClick={() => copyToClipboard(memo, setCopyMemoText)}
+                className="ml-2 px-3 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition"
+              >
+                {copyMemoText}
+              </button>
+            </div>
           </div>
         </div>
       )}
