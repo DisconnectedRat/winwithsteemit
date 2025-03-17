@@ -7,7 +7,7 @@ const ResultsPage = () => {
   const [latestWinner, setLatestWinner] = useState(null);
   const [totalPrize, setTotalPrize] = useState(0);
   const [todaysWinners, setTodaysWinners] = useState([]);
-  const [pastResults, setPastResults] = useState([]);
+  const [pastResults, setPastResults] = useState([]); // ✅ Always default as an array
 
   // ✅ Fetch Winning Results
   const fetchWinningResults = async () => {
@@ -15,29 +15,29 @@ const ResultsPage = () => {
       // Fetch winning number
       const response = await fetch("/api/fetchWinningNumber");
       const data = await response.json();
-      setWinningNumber(data.winningNumber);
+      setWinningNumber(data.winningNumber || "000"); // Default "000" if missing
 
       // Fetch total prize distributed
       const prizeResponse = await fetch("/api/fetchTotalPrize");
       const prizeData = await prizeResponse.json();
-      setTotalPrize(prizeData.totalPrize);
+      setTotalPrize(prizeData.totalPrize || 0);
 
       // Fetch latest jackpot winner
       const jackpotResponse = await fetch("/api/fetchJackpotWinner");
       const jackpotData = await jackpotResponse.json();
-      setLatestWinner(jackpotData.jackpotWinner);
+      setLatestWinner(jackpotData.jackpotWinner || null);
 
       // Fetch yesterday's winners
       const winnersResponse = await fetch("/api/fetchYesterdaysWinners");
       const winnersData = await winnersResponse.json();
-      setTodaysWinners(winnersData.yesterdayWinners);
+      setTodaysWinners(winnersData.yesterdayWinners || []);
 
       // Fetch past winning numbers
       const pastResultsResponse = await fetch("/api/fetchPastWinningNumbers");
       const pastResultsData = await pastResultsResponse.json();
-      setPastResults(pastResultsData.pastWinningNumbers);
+      setPastResults(Array.isArray(pastResultsData.pastWinningNumbers) ? pastResultsData.pastWinningNumbers : []); // ✅ Ensure it's an array
     } catch (error) {
-      console.error("Error fetching results:", error);
+      console.error("❌ Error fetching results:", error);
     }
   };
 
@@ -95,12 +95,12 @@ const ResultsPage = () => {
             </tr>
           </thead>
           <tbody>
-            {todaysWinners.length > 0 ? (
+            {Array.isArray(todaysWinners) && todaysWinners.length > 0 ? (
               todaysWinners.map((winner, index) => (
                 <tr key={index} className="text-center bg-gray-50 hover:bg-gray-200 transition-all">
                   <td className="border px-4 py-2">{winner.username}</td>
-                  <td className="border px-4 py-2">{winner.numbers.join(", ")}</td>
-                  <td className="border px-4 py-2 font-bold text-green-600">{winner.prize}</td>
+                  <td className="border px-4 py-2">{winner.numbers ? winner.numbers.join(", ") : "N/A"}</td> {/* ✅ Fixed `.join()` issue */}
+                  <td className="border px-4 py-2 font-bold text-green-600">{winner.prize} STEEM</td>
                 </tr>
               ))
             ) : (
@@ -127,13 +127,13 @@ const ResultsPage = () => {
             </tr>
           </thead>
           <tbody>
-            {pastResults.length > 0 ? (
+            {Array.isArray(pastResults) && pastResults.length > 0 ? (
               pastResults.map((result, index) => (
                 <tr key={index} className="text-center bg-gray-50 hover:bg-gray-200 transition-all">
-                  <td className="border px-4 py-2">{result.date}</td>
-                  <td className="border px-4 py-2 font-bold text-blue-600">{result.number}</td>
-                  <td className="border px-4 py-2">{result.winner}</td>
-                  <td className="border px-4 py-2 font-bold text-green-600">{result.prize} STEEM</td>
+                  <td className="border px-4 py-2">{result.date || "N/A"}</td>
+                  <td className="border px-4 py-2 font-bold text-blue-600">{result.number || "000"}</td>
+                  <td className="border px-4 py-2">{result.winner || "No Winner"}</td>
+                  <td className="border px-4 py-2 font-bold text-green-600">{result.amount || "0 STEEM"}</td>
                 </tr>
               ))
             ) : (
