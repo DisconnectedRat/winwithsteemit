@@ -29,14 +29,13 @@ export default function HomePage() {
         <NumberRoller onSelect={handleNumberSelection} />
 
         {/* ⏳ Next Draw Countdown - Bigger & Eye-catching */}
-        <div className="text-center mt-6">
-          <p className="text-6xl font-bold text-blue-700 tracking-wide">
-            <CountdownTimer />
-          </p>
-        </div>
+        <p className="text-6xl font-bold text-blue-700 tracking-wide">
+        </p>
+        <CountdownTimer />
+
 
         {/* 👥 Top Buyers Section - Improved Styling */}
-        <div className="mt-8">
+        <div className="mt-5">
           <div className="overflow-hidden rounded-lg shadow-lg">
             <TopBuys />
           </div>

@@ -60,7 +60,7 @@ const NumberRoller = ({ onSelect }) => {
 
   return (
     <div className="flex flex-col items-center">
-      <h2 className="text-lg font-semibold mb-4">Pick Your Numbers</h2>
+      <h2 className="text-lg font-semibold mb-5">Pick Your Numbers</h2>
 
       {/* **Number Roller** */}
       <div className="flex space-x-6">
@@ -130,8 +130,11 @@ const NumberRoller = ({ onSelect }) => {
           <h3 className="text-lg font-bold text-gray-700 mb-2">💰 Payment Instructions:</h3>
           <p className="text-gray-600">
             Send <strong>{selectedTickets.length} STEEM</strong> to the <strong>winwithsteemit</strong> account  
-            account via your wallet. Be sure to copy and paste your memo in the transfer. 
-            Once the payment is complete, verify your transaction on the <strong>Today&apos;s Entrants</strong> page. 
+            via your wallet. Be sure to copy and paste your memo in the transfer. 
+            Once the payment is complete, verify your transaction on the 
+            <a href="https://winwithsteemit.com/entrants" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-bold hover:underline">
+            Today&apos;s Entrants
+            </a> page.
           </p>
 
           {/* Copy Account Section */}

@@ -7,7 +7,7 @@ const ResultsPage = () => {
   const [latestWinner, setLatestWinner] = useState(null);
   const [totalPrize, setTotalPrize] = useState(0);
   const [todaysWinners, setTodaysWinners] = useState([]);
-  const [pastResults, setPastResults] = useState([]); // ✅ Always default as an array
+  const [pastResults, setPastResults] = useState([]); // 🔹 Ensures state is initialized
 
   // ✅ Fetch Winning Results
   const fetchWinningResults = async () => {
@@ -15,27 +15,27 @@ const ResultsPage = () => {
       // Fetch winning number
       const response = await fetch("/api/fetchWinningNumber");
       const data = await response.json();
-      setWinningNumber(data.winningNumber || "000"); // Default "000" if missing
+      setWinningNumber(data?.winningNumber || "000"); // 🔹 Ensures no undefined value
 
       // Fetch total prize distributed
       const prizeResponse = await fetch("/api/fetchTotalPrize");
       const prizeData = await prizeResponse.json();
-      setTotalPrize(prizeData.totalPrize || 0);
+      setTotalPrize(prizeData?.totalPrize || 0); // 🔹 Prevents null values
 
       // Fetch latest jackpot winner
       const jackpotResponse = await fetch("/api/fetchJackpotWinner");
       const jackpotData = await jackpotResponse.json();
-      setLatestWinner(jackpotData.jackpotWinner || null);
+      setLatestWinner(jackpotData?.jackpotWinner || null); // 🔹 Ensures proper state update
 
       // Fetch yesterday's winners
       const winnersResponse = await fetch("/api/fetchYesterdaysWinners");
       const winnersData = await winnersResponse.json();
-      setTodaysWinners(winnersData.yesterdayWinners || []);
+      setTodaysWinners(winnersData?.yesterdayWinners || []); // 🔹 Prevents undefined
 
       // Fetch past winning numbers
       const pastResultsResponse = await fetch("/api/fetchPastWinningNumbers");
       const pastResultsData = await pastResultsResponse.json();
-      setPastResults(Array.isArray(pastResultsData.pastWinningNumbers) ? pastResultsData.pastWinningNumbers : []); // ✅ Ensure it's an array
+      setPastResults(pastResultsData?.pastWinningNumbers || []); // 🔹 Ensures valid state
     } catch (error) {
       console.error("❌ Error fetching results:", error);
     }
@@ -44,7 +44,7 @@ const ResultsPage = () => {
   // ✅ Runs the function once when page loads
   useEffect(() => {
     fetchWinningResults();
-  }, []);
+  }, []); // ✅ No missing dependencies
 
   return (
     <div className="container mx-auto p-6">
@@ -98,9 +98,9 @@ const ResultsPage = () => {
             {Array.isArray(todaysWinners) && todaysWinners.length > 0 ? (
               todaysWinners.map((winner, index) => (
                 <tr key={index} className="text-center bg-gray-50 hover:bg-gray-200 transition-all">
-                  <td className="border px-4 py-2">{winner.username}</td>
-                  <td className="border px-4 py-2">{winner.numbers ? winner.numbers.join(", ") : "N/A"}</td> {/* ✅ Fixed `.join()` issue */}
-                  <td className="border px-4 py-2 font-bold text-green-600">{winner.prize} STEEM</td>
+                  <td className="border px-4 py-2">{winner?.username || "Unknown"}</td>
+                  <td className="border px-4 py-2">{winner?.numbers?.join(", ") || "N/A"}</td>
+                  <td className="border px-4 py-2 font-bold text-green-600">{winner?.prize || "0"} STEEM</td>
                 </tr>
               ))
             ) : (
@@ -130,10 +130,10 @@ const ResultsPage = () => {
             {Array.isArray(pastResults) && pastResults.length > 0 ? (
               pastResults.map((result, index) => (
                 <tr key={index} className="text-center bg-gray-50 hover:bg-gray-200 transition-all">
-                  <td className="border px-4 py-2">{result.date || "N/A"}</td>
-                  <td className="border px-4 py-2 font-bold text-blue-600">{result.number || "000"}</td>
-                  <td className="border px-4 py-2">{result.winner || "No Winner"}</td>
-                  <td className="border px-4 py-2 font-bold text-green-600">{result.amount || "0 STEEM"}</td>
+                  <td className="border px-4 py-2">{result?.date || "N/A"}</td>
+                  <td className="border px-4 py-2 font-bold text-blue-600">{result?.number || "000"}</td>
+                  <td className="border px-4 py-2">{result?.winner || "No Winner"}</td>
+                  <td className="border px-4 py-2 font-bold text-green-600">{result?.amount || "0 STEEM"}</td>
                 </tr>
               ))
             ) : (

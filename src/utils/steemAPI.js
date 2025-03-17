@@ -1,27 +1,26 @@
 import axios from "axios";
 
-// ✅ New Working APIs
+// ✅ New Working API
 const PRIMARY_API = "https://api.steemit.com"; // Official Steemit API
-const BACKUP_API = "https://api.justyy.workers.dev/api/steemit/transfer-history";
 const LOTTERY_ACCOUNT = "winwithsteemit"; // The official lottery account
 
 // **🔹 Fetch Latest Transactions using Steemit API**
-export async function fetchSteemTransactions(account = LOTTERY_ACCOUNT, limit = 50) {
+export async function fetchSteemTransactions(account = LOTTERY_ACCOUNT, limit = 20) { // 🔹 Set limit to 20 (API restriction)
   try {
-    console.log(`🔄 Fetching latest ${limit} transactions from ${PRIMARY_API}...`);
+    console.log(`🔄 Fetching latest ${limit} transactions from ${PRIMARY_API} for ${account}...`);
 
     const response = await axios.post(PRIMARY_API, {
       jsonrpc: "2.0",
       method: "condenser_api.get_account_history",
-      params: [account, -1, limit], // Fetch last 'limit' transactions
+      params: [account, -1, limit], // 🔹 Fetch last 20 transactions only
       id: 1,
     });
 
     const transactions = response.data.result;
 
     if (!transactions || transactions.length === 0) {
-      console.warn("⚠️ No transactions found. Trying backup API...");
-      return await fetchSteemTransactionsBackup(); // Use backup API if first one fails
+      console.warn("⚠️ No transactions found.");
+      return [];
     }
 
     // ✅ Filter only "transfer" transactions with valid lottery memo
@@ -31,44 +30,21 @@ export async function fetchSteemTransactions(account = LOTTERY_ACCOUNT, limit = 
       .map((tx) => {
         const { from, to, amount, memo } = tx.op[1];
 
-        if (to === LOTTERY_ACCOUNT && memo.startsWith("Lottery")) {
+        // ✅ Ensure it's a valid lottery transaction (contains "Lottery" and encrypted numbers)
+        const isValidMemo = /^Lottery\s\d+$/.test(memo);
+
+        if (to === account && isValidMemo) {
           return {
             username: from,
-            tickets: parseFloat(amount.split(" ")[0]), // STEEM amount = tickets
+            tickets: parseFloat(amount.split(" ")[0]), // Extract STEEM amount as tickets
             memo,
           };
         }
         return null;
       })
       .filter((entry) => entry !== null); // Remove null values
-
   } catch (error) {
     console.error("❌ Error fetching transactions:", error);
-    return [];
-  }
-}
-
-// **🔹 Backup API (Alternative Source)**
-async function fetchSteemTransactionsBackup() {
-  try {
-    console.log(`🔄 Fetching transactions from backup API ${BACKUP_API}...`);
-    
-    const response = await axios.get(`${BACKUP_API}/${LOTTERY_ACCOUNT}`);
-
-    if (!response.data || !Array.isArray(response.data)) {
-      console.error("❌ Backup API did not return a valid transaction list.");
-      return [];
-    }
-
-    return response.data
-      .filter((tx) => tx.memo && tx.memo.startsWith("Lottery")) // Ensure valid memo
-      .map((tx) => ({
-        username: tx.from,
-        tickets: parseInt(tx.amount),
-        memo: tx.memo,
-      }));
-  } catch (error) {
-    console.error("❌ Error fetching transactions from backup:", error);
     return [];
   }
 }
@@ -98,7 +74,7 @@ export async function fetchTopBuyers() {
 export async function sendSteemPayment(username, amount, memo) {
   try {
     console.log(`✅ Sending ${amount} STEEM to ${username} with memo: ${memo}`);
-    
+
     // 🚀 Add Steemit transaction logic here
     // This would typically involve using a Steem library like steem.js or SteemConnect API.
     // Placeholder return for now:
