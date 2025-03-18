@@ -58,7 +58,7 @@ export async function fetchPastWinners(days = 10) {
 
 // **🔹 Generate & Store Winning Number**
 export async function generateWinningNumber() {
-  const newNumber = Math.floor(100 + Math.random() * 900).toString();
+  const newNumber = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
   const today = new Date().toISOString().split("T")[0];
 
   try {
