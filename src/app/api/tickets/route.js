@@ -1,46 +1,38 @@
-import fs from "fs/promises";
-import path from "path";
-
-const PURCHASED_TICKETS_FILE = path.join(process.cwd(), "src/data/purchasedTickets.json");
-
-// Ensure the file exists (same as before)
-async function ensureFileExists() {
-  try {
-    await fs.access(PURCHASED_TICKETS_FILE);
-  } catch {
-    console.warn("⚠️ Ticket file missing. Creating new file...");
-    await fs.mkdir(path.dirname(PURCHASED_TICKETS_FILE), { recursive: true });
-    await fs.writeFile(PURCHASED_TICKETS_FILE, JSON.stringify([]));
-  }
-}
+import { firestore } from "@/utils/firebaseAdmin";
 
 export async function GET(request) {
   try {
-    await ensureFileExists();
-    const data = await fs.readFile(PURCHASED_TICKETS_FILE, "utf8");
-    const tickets = JSON.parse(data);
+    // Fetch all purchased ticket documents from Firestore
+    const snapshot = await firestore.collection("purchasedTickets").get();
+    let tickets = [];
+    snapshot.forEach((doc) => {
+      // Each document is expected to have at least a 'timestamp' field (as an ISO string)
+      tickets.push(doc.data());
+    });
 
     const now = new Date();
-
-    // Define the current UTC day's start and end:
+    // Define the current UTC day's start and end
     const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const endOfTodayUTC = new Date(startOfTodayUTC.getTime() + 24 * 60 * 60 * 1000);
 
-    // Filter tickets for the current 24-hour window:
-    const todaysTickets = tickets.filter(ticket => {
+    // Filter tickets for the current 24-hour window
+    const todaysTickets = tickets.filter((ticket) => {
       const ticketTime = new Date(ticket.timestamp);
       return ticketTime >= startOfTodayUTC && ticketTime < endOfTodayUTC;
     });
 
     // Cleanup: Remove tickets older than 3 days
     const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-    const cleanedTickets = tickets.filter(ticket => {
-      const ticketTime = new Date(ticket.timestamp);
-      return ticketTime >= threeDaysAgo;
+    // Prepare a batch for deletion
+    const batch = firestore.batch();
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      const ticketTime = new Date(data.timestamp);
+      if (ticketTime < threeDaysAgo) {
+        batch.delete(doc.ref);
+      }
     });
-
-    // Persist the cleaned tickets back to the JSON file.
-    await fs.writeFile(PURCHASED_TICKETS_FILE, JSON.stringify(cleanedTickets, null, 2));
+    await batch.commit();
 
     return new Response(JSON.stringify(todaysTickets), {
       status: 200,
