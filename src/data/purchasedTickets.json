@@ -1,0 +1,12 @@
+[
+  {
+    "username": "manualUser",
+    "tickets": [
+      "012",
+      "345",
+      "678"
+    ],
+    "memo": "Lottery manual test",
+    "timestamp": "2025-03-18T00:13:06.695Z"
+  }
+]

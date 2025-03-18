@@ -37,7 +37,7 @@ function getTimeUntilNextUTC() {
 }
 
 function refreshEntrants() {
-  console.log("Refreshing Today's Entrants list...");
+  console.log("Refreshing Today&apos;s Entrants list...");
   // Here, you can trigger a backend request to reload today's data
 }
 

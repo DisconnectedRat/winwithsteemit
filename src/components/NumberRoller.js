@@ -32,22 +32,35 @@ const NumberRoller = ({ onSelect }) => {
     }
   };
 
-  // **Encrypt Memo & Calculate STEEM**
-  const handleConfirmPurchase = () => {
+  // **Encrypt Memo, Confirm Purchase & Store Ticket Data**
+  const handleConfirmPurchase = async () => {
     if (selectedTickets.length === 0) return;
 
     const firstTicket = parseInt(selectedTickets[0]); // Convert to number
     const totalSTEEM = selectedTickets.length; // Total STEEM required
-    const todayDate = new Date().toISOString().split("T")[0].replace(/-/g, ""); // YYYYMMDD format
-
-    // **Encrypt Memo using multiplication**
+    // Keeping the existing encryption logic
+    const todayDate = new Date().toISOString().split("T")[0].replace(/-/g, "");
     const encryptedNumber = firstTicket * totalSTEEM * parseInt(todayDate);
-
-    // **Ensure memo starts with "Lottery" for API tracking**
     const finalMemo = `Lottery ${encryptedNumber}`;
 
-    setMemo(finalMemo); // Store updated memo
+    setMemo(finalMemo);
     setIsConfirmed(true);
+
+    // **Send Ticket Data to API for storage**
+    try {
+      await fetch("/api/storeTickets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: "disconnect", // ✅ Fetch username dynamically in the future
+          tickets: selectedTickets,
+          memo: finalMemo,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    } catch (error) {
+      console.error("❌ Error storing ticket data:", error);
+    }
   };
 
   // **Copy Text to Clipboard Function**
@@ -131,10 +144,16 @@ const NumberRoller = ({ onSelect }) => {
           <p className="text-gray-600">
             Send <strong>{selectedTickets.length} STEEM</strong> to the <strong>winwithsteemit</strong> account  
             via your wallet. Be sure to copy and paste your memo in the transfer. 
-            Once the payment is complete, verify your transaction on the 
-            <a href="https://winwithsteemit.com/entrants" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-bold hover:underline">
-            Today&apos;s Entrants
-            </a> page.
+            Once the payment is complete, verify your transaction on the{" "}
+            <a
+              href="https://winwithsteemit.com/entrants"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 font-bold hover:underline"
+            >
+              Today&apos;s Entrants
+            </a>{" "}
+            page.
           </p>
 
           {/* Copy Account Section */}

@@ -7,7 +7,7 @@ const ResultsPage = () => {
   const [latestWinner, setLatestWinner] = useState(null);
   const [totalPrize, setTotalPrize] = useState(0);
   const [todaysWinners, setTodaysWinners] = useState([]);
-  const [pastResults, setPastResults] = useState([]); // 🔹 Ensures state is initialized
+  const [pastResults, setPastResults] = useState([]); // Ensures state is initialized
 
   // ✅ Fetch Winning Results
   const fetchWinningResults = async () => {
@@ -15,27 +15,28 @@ const ResultsPage = () => {
       // Fetch winning number
       const response = await fetch("/api/fetchWinningNumber");
       const data = await response.json();
-      setWinningNumber(data?.winningNumber || "000"); // 🔹 Ensures no undefined value
+      // Use the returned winning number or null if missing to avoid null errors
+      setWinningNumber(data?.winningNumber || null);
 
       // Fetch total prize distributed
       const prizeResponse = await fetch("/api/fetchTotalPrize");
       const prizeData = await prizeResponse.json();
-      setTotalPrize(prizeData?.totalPrize || 0); // 🔹 Prevents null values
+      setTotalPrize(prizeData?.totalPrize || 0);
 
       // Fetch latest jackpot winner
       const jackpotResponse = await fetch("/api/fetchJackpotWinner");
       const jackpotData = await jackpotResponse.json();
-      setLatestWinner(jackpotData?.jackpotWinner || null); // 🔹 Ensures proper state update
+      setLatestWinner(jackpotData?.jackpotWinner || null);
 
       // Fetch yesterday's winners
       const winnersResponse = await fetch("/api/fetchYesterdaysWinners");
       const winnersData = await winnersResponse.json();
-      setTodaysWinners(winnersData?.yesterdayWinners || []); // 🔹 Prevents undefined
+      setTodaysWinners(winnersData?.yesterdayWinners || []);
 
       // Fetch past winning numbers
       const pastResultsResponse = await fetch("/api/fetchPastWinningNumbers");
       const pastResultsData = await pastResultsResponse.json();
-      setPastResults(pastResultsData?.pastWinningNumbers || []); // 🔹 Ensures valid state
+      setPastResults(pastResultsData?.pastWinningNumbers || []);
     } catch (error) {
       console.error("❌ Error fetching results:", error);
     }
@@ -44,7 +45,7 @@ const ResultsPage = () => {
   // ✅ Runs the function once when page loads
   useEffect(() => {
     fetchWinningResults();
-  }, []); // ✅ No missing dependencies
+  }, []);
 
   return (
     <div className="container mx-auto p-6">
@@ -61,7 +62,7 @@ const ResultsPage = () => {
             <p className="text-gray-700 font-medium mt-2">Winning Number</p>
           </div>
         ) : (
-          <p className="text-gray-500 text-lg">Generating Winning Number...</p>
+          <p className="text-gray-500 text-lg">No Winning Number Available</p>
         )}
       </div>
 

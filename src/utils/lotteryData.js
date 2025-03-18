@@ -88,6 +88,8 @@ export async function generateWinningNumber() {
 export async function fetchWinningNumber() {
   try {
     console.log("✅ Fetching Winning Number...");
+    console.log("🌍 Running in Environment:", process.env.NEXT_PUBLIC_ENV || "Unknown");
+    
     await ensureFileExists(WINNING_NUMBER_FILE, []);
 
     const data = await fs.readFile(WINNING_NUMBER_FILE, "utf8");
@@ -110,6 +112,7 @@ export async function fetchWinningNumber() {
       return await generateWinningNumber();
     }
 
+    console.log("🎯 Returning Winning Number:", latestEntry.number);
     return latestEntry.number;
   } catch (error) {
     console.error("❌ Error fetching winning number:", error);
