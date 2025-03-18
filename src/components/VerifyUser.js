@@ -16,16 +16,26 @@ const VerifyEntry = ({ onUserVerified }) => {
     setMessage("");
 
     try {
-      const validEntries = await fetchSteemTransactions();
-      const userEntry = validEntries.find((entry) => entry.username === `@${username}`);
+      // Destructure transactions array from the API response
+      const { transactions } = await fetchSteemTransactions();
+      
+      // Clean the username (remove leading '@' if present) and compare in lower case
+      const cleanedUsername = username.replace(/^@/, "").toLowerCase();
+      
+      const userEntry = transactions.find(
+        (entry) => entry.username.toLowerCase() === cleanedUsername
+      );
       
       if (userEntry) {
-        setMessage(`✅ Thank you @${username} for purchasing tickets for today's draw! Your participation is recorded.`);
+        setMessage(
+          `✅ Thank you @${cleanedUsername} for purchasing tickets for today's draw! Your participation is recorded.`
+        );
         onUserVerified(userEntry); // Add user to Today's Entrants List
       } else {
         setMessage("❌ No valid transaction found for this username. Please check again!");
       }
     } catch (error) {
+      console.error("Error during verification:", error);
       setMessage("⚠️ Error fetching transactions. Please try again later.");
     }
     setLoading(false);
