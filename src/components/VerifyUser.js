@@ -16,24 +16,62 @@ const VerifyEntry = ({ onUserVerified = () => {} }) => {
     setMessage("");
 
     try {
-      // Destructure transactions array from the API response
-      const { transactions } = await fetchSteemTransactions();
-      console.log("VerifyEntry received:", { transactions });
-      
-      // Clean the username (remove leading '@' if present) and compare in lower case
+      // Fetch transactions from our custom API endpoint
+      const response = await fetchSteemTransactions();
+      console.log("VerifyEntry received:", response);
+
+      if (!response || !response.transactions) {
+        throw new Error("Response does not contain transactions.");
+      }
+
+      const { transactions } = response;
       const cleanedUsername = username.replace(/^@/, "").toLowerCase();
-      
-      const userEntry = transactions.find(
+
+      // Get current time and cutoff (24 hours ago)
+      const now = new Date();
+      const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+      // Filter transactions: only include those within the last 24 hours
+      const recentTransactions = transactions.filter(tx => {
+        const txTime = new Date(tx.timestamp);
+        return txTime >= cutoff;
+      });
+
+      const userEntry = recentTransactions.find(
         (entry) => entry.username.toLowerCase() === cleanedUsername
       );
-      
+
       if (userEntry) {
         setMessage(
           `✅ Thank you @${cleanedUsername} for purchasing tickets for today's draw! Your participation is recorded.`
         );
-        onUserVerified(userEntry); // Call the provided function (default is no-op)
+        
+        // Prepare ticket data to store
+        const ticketData = {
+          username: cleanedUsername,
+          // Wrap ticket in an array (if more than one transaction is expected, adjust accordingly)
+          tickets: [userEntry.memo.replace(/^Lottery\s/, "")], // extracting the number part, for example
+          memo: userEntry.memo,
+          timestamp: new Date().toISOString(),
+        };
+
+        // Call the storeTicket API endpoint to save the ticket in Firestore
+        const storeResponse = await fetch("/api/storeTicket", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(ticketData),
+        });
+        const storeResult = await storeResponse.json();
+        if (storeResult.success) {
+          console.log("Ticket stored successfully:", storeResult.message);
+        } else {
+          console.error("Failed to store ticket:", storeResult.error);
+        }
+        
+        // Call the parent's callback to update the confirmed participants list
+        onUserVerified(userEntry);
       } else {
-        setMessage("❌ No valid transaction found for this username. Please check again!");
+        setMessage("❌ No valid transaction found for this username in the last 24 hours. Please check again!");
       }
     } catch (error) {
       console.error("Error during verification:", error);

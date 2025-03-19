@@ -5,8 +5,15 @@ export async function fetchSteemTransactions() {
   try {
     console.log("🔄 [Client] Fetching transactions from /api/fetchSteemTransactions...");
     const response = await axios.get("/api/fetchSteemTransactions");
-    console.log("🔄 [Client] Received response:", response.data);
-    return response.data;
+    const data = response.data;
+    console.log("🔄 [Client] Received response:", data);
+    
+    // Ensure the response has a 'transactions' property that is an array
+    if (!data || !Array.isArray(data.transactions)) {
+      throw new Error("Invalid response format: 'transactions' property is missing or not an array");
+    }
+    
+    return data;
   } catch (error) {
     console.error("❌ Error in fetchSteemTransactions:", error);
     throw error;
@@ -38,8 +45,7 @@ export async function fetchTopBuyers() {
 export async function sendSteemPayment(username, amount, memo) {
   try {
     console.log(`✅ Sending ${amount} STEEM to ${username} with memo: ${memo}`);
-    // 🚀 Add Steemit transaction logic here.
-    // Placeholder return for now:
+    // 🚀 Placeholder: Add your actual Steemit transaction logic here.
     return { success: true, message: "Payment sent" };
   } catch (error) {
     console.error("❌ Error sending Steem payment:", error);
