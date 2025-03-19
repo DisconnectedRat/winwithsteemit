@@ -16,7 +16,7 @@ const VerifyEntry = ({ onUserVerified = () => {} }) => {
     setMessage("");
 
     try {
-      // Fetch transactions from our custom API endpoint
+      // Fetch recent transactions from our custom API route
       const response = await fetchSteemTransactions();
       console.log("VerifyEntry received:", response);
 
@@ -31,7 +31,7 @@ const VerifyEntry = ({ onUserVerified = () => {} }) => {
       const now = new Date();
       const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-      // Filter transactions: only include those within the last 24 hours
+      // Filter transactions to include only those within the last 24 hours
       const recentTransactions = transactions.filter(tx => {
         const txTime = new Date(tx.timestamp);
         return txTime >= cutoff;
@@ -45,17 +45,19 @@ const VerifyEntry = ({ onUserVerified = () => {} }) => {
         setMessage(
           `✅ Thank you @${cleanedUsername} for purchasing tickets for today's draw! Your participation is recorded.`
         );
-        
-        // Prepare ticket data to store
+
+        // Prepare ticket data to store in Firestore
+        // Here, we assume that ticket details (like ticket numbers) are generated
+        // and stored by your NumberRoller component. Adjust as needed.
         const ticketData = {
           username: cleanedUsername,
-          // Wrap ticket in an array (if more than one transaction is expected, adjust accordingly)
-          tickets: [userEntry.memo.replace(/^Lottery\s/, "")], // extracting the number part, for example
+          // Example: using the memo from the transaction to extract ticket number(s)
+          tickets: [userEntry.memo.replace(/^Lottery\s/, "")],
           memo: userEntry.memo,
           timestamp: new Date().toISOString(),
         };
 
-        // Call the storeTicket API endpoint to save the ticket in Firestore
+        // Call the /api/storeTicket endpoint to save the ticket
         const storeResponse = await fetch("/api/storeTicket", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -68,7 +70,7 @@ const VerifyEntry = ({ onUserVerified = () => {} }) => {
           console.error("Failed to store ticket:", storeResult.error);
         }
         
-        // Call the parent's callback to update the confirmed participants list
+        // Notify parent to update the Confirmed Participants table
         onUserVerified(userEntry);
       } else {
         setMessage("❌ No valid transaction found for this username in the last 24 hours. Please check again!");
@@ -98,6 +100,9 @@ const VerifyEntry = ({ onUserVerified = () => {} }) => {
         {loading ? "Checking..." : "Verify Entry"}
       </button>
       {message && <p className="mt-4 text-lg">{message}</p>}
+      <p className="mt-2 text-sm text-gray-600">
+        Note: Very recent transactions might take up to 30 seconds to appear.
+      </p>
     </div>
   );
 };

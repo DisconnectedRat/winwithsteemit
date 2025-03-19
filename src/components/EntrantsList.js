@@ -6,11 +6,19 @@ const EntrantsList = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // ✅ Fetch stored ticket data from our JSON database via API
     fetch("/api/tickets")
       .then((res) => res.json())
       .then((data) => {
-        setEntrants(data);
+        // Ensure data is an array and filter entries for today's UTC date
+        if (Array.isArray(data)) {
+          const today = new Date().toISOString().split("T")[0];
+          const todaysEntries = data.filter(
+            (entry) => entry.timestamp && entry.timestamp.startsWith(today)
+          );
+          setEntrants(todaysEntries);
+        } else {
+          setEntrants([]);
+        }
         setLoading(false);
       })
       .catch((error) => {
@@ -21,7 +29,6 @@ const EntrantsList = () => {
 
   return (
     <div className="container mx-auto p-4">
-      {/* Entrants Table */}
       <table className="table-auto w-full border mt-4">
         <thead>
           <tr className="bg-gray-200">
@@ -42,8 +49,14 @@ const EntrantsList = () => {
             entrants.map((entry, index) => (
               <tr key={index} className="text-center">
                 <td className="border px-4 py-2">@{entry.username}</td>
-                <td className="border px-4 py-2">{entry.tickets.length}</td>
-                <td className="border px-4 py-2">{entry.tickets.join(", ")}</td>
+                <td className="border px-4 py-2">
+                  {Array.isArray(entry.tickets) ? entry.tickets.length : 0}
+                </td>
+                <td className="border px-4 py-2">
+                  {Array.isArray(entry.tickets)
+                    ? entry.tickets.join(", ")
+                    : "N/A"}
+                </td>
                 <td className="border px-4 py-2">{entry.memo}</td>
               </tr>
             ))
