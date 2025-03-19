@@ -1,81 +1,73 @@
 "use server";
+import { firestore } from "@/utils/firebaseAdmin";
 import { sendSteemPayment } from "@/utils/steemAPI";
-import fs from "fs/promises";
-import path from "path";
 
-const JACKPOT_WINNER_FILE = path.join(process.cwd(), "src/data/jackpotWinner.json");
-const PRIZE_HISTORY_FILE = path.join(process.cwd(), "src/data/prizeHistory.json");
-const WINNING_NUMBER_FILE = path.join(process.cwd(), "src/data/winningNumber.json");
+// 🔹 COLLECTION NAMES (adjust if desired)
+const WINNING_NUMBERS_COLLECTION = "winningNumbers";
+const JACKPOT_WINNERS_COLLECTION = "jackpotWinners";
+const PRIZE_HISTORY_COLLECTION = "prizeHistory";
 
-// **🔹 Ensure directory exists before writing**
-async function ensureFileExists(filePath, defaultContent) {
-  try {
-    await fs.access(filePath);
-  } catch {
-    console.warn(`⚠️ File missing: ${filePath}, creating new file...`);
-    await fs.mkdir(path.dirname(filePath), { recursive: true });
-    await fs.writeFile(filePath, JSON.stringify(defaultContent, null, 2));
-  }
-}
-
-// **🔹 Fetch confirmed lottery entrants (Newly Added)**
+/**
+ * 🔹 Fetch confirmed lottery entrants
+ *   (Placeholder or connect to Steemit API logic)
+ */
 export async function fetchConfirmedEntrants() {
   try {
     console.log("✅ Fetching confirmed lottery entrants...");
-    
-    // 🚀 Replace this with actual logic to get entrants from Steemit API
+    // Replace with actual logic to retrieve entrants.
     // Example:
     // const response = await fetch("/api/fetchSteemTransactions");
     // const data = await response.json();
-    
-    return []; // Placeholder return
+    return []; // Placeholder
   } catch (error) {
     console.error("❌ Error fetching confirmed entrants:", error);
     return [];
   }
 }
 
-// **🔹 Fetch past winning numbers**
+/**
+ * 🔹 Fetch past winning numbers
+ *   Returns the most recent `days` entries in descending order
+ */
 export async function fetchPastWinners(days = 10) {
   try {
-    console.log("🔄 Fetching past winning numbers...");
-    await ensureFileExists(WINNING_NUMBER_FILE, []);
+    console.log("🔄 Fetching past winning numbers from Firestore...");
+    const snapshot = await firestore
+      .collection(WINNING_NUMBERS_COLLECTION)
+      .orderBy("date", "desc")
+      .limit(days)
+      .get();
 
-    const data = await fs.readFile(WINNING_NUMBER_FILE, "utf8");
-    let history = JSON.parse(data);
+    const history = [];
+    snapshot.forEach((doc) => {
+      history.push(doc.data());
+    });
 
-    if (!Array.isArray(history)) {
-      console.error("❌ Error: winningNumber.json is not an array. Resetting...");
-      history = [];
-    }
-
-    return history.slice(-days);
+    // If you want them in ascending date order, reverse:
+    return history.reverse();
   } catch (error) {
     console.warn("⚠️ Error fetching past winners:", error);
     return [];
   }
 }
 
-// **🔹 Generate & Store Winning Number**
+/**
+ * 🔹 Generate & Store Winning Number in Firestore
+ */
 export async function generateWinningNumber() {
-  const newNumber = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  const newNumber = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
   const today = new Date().toISOString().split("T")[0];
 
   try {
-    await ensureFileExists(WINNING_NUMBER_FILE, []);
+    await firestore
+      .collection(WINNING_NUMBERS_COLLECTION)
+      .doc(today)
+      .set({
+        number: newNumber,
+        date: today,
+        createdAt: new Date().toISOString(),
+      });
 
-    const data = await fs.readFile(WINNING_NUMBER_FILE, "utf8");
-    let history = JSON.parse(data);
-
-    if (!Array.isArray(history)) {
-      console.warn("⚠️ Winning Number file was not an array. Resetting...");
-      history = [];
-    }
-
-    history.push({ number: newNumber, date: today });
-    history = history.slice(-10);
-
-    await fs.writeFile(WINNING_NUMBER_FILE, JSON.stringify(history, null, 2));
     console.log(`🎉 New Winning Number Generated: ${newNumber}`);
     return newNumber;
   } catch (error) {
@@ -84,98 +76,129 @@ export async function generateWinningNumber() {
   }
 }
 
-// **🔹 Fetch stored winning number**
+/**
+ * 🔹 Fetch stored winning number
+ *   If today's doc doesn't exist, generate a new one
+ */
 export async function fetchWinningNumber() {
   try {
     console.log("✅ Fetching Winning Number...");
     console.log("🌍 Running in Environment:", process.env.NEXT_PUBLIC_ENV || "Unknown");
-    
-    await ensureFileExists(WINNING_NUMBER_FILE, []);
 
-    const data = await fs.readFile(WINNING_NUMBER_FILE, "utf8");
-    let history = JSON.parse(data);
+    const today = new Date().toISOString().split("T")[0];
+    const docRef = firestore.collection(WINNING_NUMBERS_COLLECTION).doc(today);
+    const docSnap = await docRef.get();
 
-    if (!Array.isArray(history)) {
-      console.error("❌ Error: winningNumber.json is not an array. Returning null.");
-      return null;
-    }
-
-    const latestEntry = history.length > 0 ? history[history.length - 1] : null;
-    if (!latestEntry) {
-      console.warn("⚠️ No winning number found. Generating a new one...");
+    if (!docSnap.exists) {
+      console.warn("⚠️ No winning number found for today. Generating a new one...");
       return await generateWinningNumber();
     }
 
-    const today = new Date().toISOString().split("T")[0];
-    if (latestEntry.date !== today) {
+    const data = docSnap.data();
+    if (data.date !== today) {
       console.log("🔄 Generating New Winning Number for today...");
       return await generateWinningNumber();
     }
 
-    console.log("🎯 Returning Winning Number:", latestEntry.number);
-    return latestEntry.number;
+    console.log("🎯 Returning Winning Number:", data.number);
+    return data.number;
   } catch (error) {
     console.error("❌ Error fetching winning number:", error);
     return null;
   }
 }
 
-// **🔹 Store latest jackpot winner**
+/**
+ * 🔹 Store latest jackpot winner
+ *   Saves a doc in the "jackpotWinners" collection with a doc ID "latest"
+ */
 export async function updateJackpotWinner(username, amount) {
   try {
-    await ensureFileExists(JACKPOT_WINNER_FILE, {});
-    const jackpotData = { username, amount, date: new Date().toISOString().split("T")[0] };
-    await fs.writeFile(JACKPOT_WINNER_FILE, JSON.stringify(jackpotData, null, 2));
+    await firestore
+      .collection(JACKPOT_WINNERS_COLLECTION)
+      .doc("latest")
+      .set({
+        username,
+        amount,
+        date: new Date().toISOString().split("T")[0],
+      });
+
+    console.log(`✅ Updated jackpot winner: ${username} - ${amount}`);
   } catch (error) {
     console.error("❌ Error updating jackpot winner:", error);
   }
 }
 
-// **🔹 Fetch latest jackpot winner**
+/**
+ * 🔹 Fetch latest jackpot winner
+ *   Reads the doc with ID "latest" from "jackpotWinners" collection
+ */
 export async function fetchJackpotWinner() {
   try {
-    await ensureFileExists(JACKPOT_WINNER_FILE, {});
-    const data = await fs.readFile(JACKPOT_WINNER_FILE, "utf8");
-    return JSON.parse(data);
+    const docRef = firestore.collection(JACKPOT_WINNERS_COLLECTION).doc("latest");
+    const docSnap = await docRef.get();
+    if (!docSnap.exists) {
+      console.warn("⚠️ No jackpot winner found.");
+      return null;
+    }
+    return docSnap.data();
   } catch (error) {
-    console.warn("⚠️ No jackpot winner found.");
+    console.warn("⚠️ Error fetching jackpot winner:", error);
     return null;
   }
 }
 
-// **🔹 Update total prize distributed**
+/**
+ * 🔹 Update total prize distributed
+ *   We'll store a single doc "stats" in the "prizeHistory" collection
+ */
 export async function updateTotalPrize(prizes) {
   try {
-    await ensureFileExists(PRIZE_HISTORY_FILE, { totalPrize: 0 });
+    const docRef = firestore.collection(PRIZE_HISTORY_COLLECTION).doc("stats");
+    const docSnap = await docRef.get();
 
-    const data = await fs.readFile(PRIZE_HISTORY_FILE, "utf8");
-    const existingData = JSON.parse(data);
+    let existingData = { totalPrize: 0 };
+    if (docSnap.exists) {
+      existingData = docSnap.data();
+    }
 
-    const totalPrize = existingData.totalPrize + prizes.reduce((sum, p) => sum + p.amount, 0);
-    await fs.writeFile(PRIZE_HISTORY_FILE, JSON.stringify({ totalPrize }, null, 2));
+    const totalToAdd = prizes.reduce((sum, p) => sum + p.amount, 0);
+    const newTotalPrize = (existingData.totalPrize || 0) + totalToAdd;
 
-    return totalPrize;
+    await docRef.set({ totalPrize: newTotalPrize });
+    console.log(`✅ Updated total prize: ${newTotalPrize}`);
+    return newTotalPrize;
   } catch (error) {
     console.error("❌ Error updating total prize:", error);
     return 0;
   }
 }
 
-// **🔹 Fetch total prize distributed**
+/**
+ * 🔹 Fetch total prize distributed
+ *   Reads the doc "stats" from "prizeHistory" collection
+ */
 export async function fetchTotalPrize() {
   try {
-    await ensureFileExists(PRIZE_HISTORY_FILE, { totalPrize: 0 });
+    const docRef = firestore.collection(PRIZE_HISTORY_COLLECTION).doc("stats");
+    const docSnap = await docRef.get();
 
-    const data = await fs.readFile(PRIZE_HISTORY_FILE, "utf8");
-    const { totalPrize } = JSON.parse(data);
-    return totalPrize;
+    if (!docSnap.exists) {
+      console.warn("⚠️ No total prize doc found, returning 0.");
+      return 0;
+    }
+
+    const { totalPrize } = docSnap.data();
+    return totalPrize || 0;
   } catch (error) {
-    console.warn("⚠️ Total prize file missing, returning 0.");
+    console.warn("⚠️ Error fetching total prize, returning 0:", error);
     return 0;
   }
 }
 
-// **🔹 Process winners and distribute prizes**
+/**
+ * 🔹 Process winners and distribute prizes
+ */
 export async function distributePrizes() {
   try {
     const winningNumber = await fetchWinningNumber();
@@ -187,6 +210,7 @@ export async function distributePrizes() {
       return;
     }
 
+    // Identify winners
     let jackpotWinners = [];
     entrants.forEach(({ username, tickets }) => {
       tickets.forEach((ticket) => {
@@ -215,6 +239,7 @@ export async function distributePrizes() {
       }
     });
 
+    // Send payments
     for (const tx of prizeTransactions) {
       await sendSteemPayment(tx.username, tx.amount, `Winning Prize for Tickets: ${tx.winningTickets.join(", ")}`);
       console.log(`✅ Sent ${tx.amount} STEEM to ${tx.username}`);

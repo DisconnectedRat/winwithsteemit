@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { fetchSteemTransactions } from "@/utils/steemAPI";
 
-const VerifyEntry = ({ onUserVerified }) => {
+const VerifyEntry = ({ onUserVerified = () => {} }) => {
   const [username, setUsername] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,6 +18,7 @@ const VerifyEntry = ({ onUserVerified }) => {
     try {
       // Destructure transactions array from the API response
       const { transactions } = await fetchSteemTransactions();
+      console.log("VerifyEntry received:", { transactions });
       
       // Clean the username (remove leading '@' if present) and compare in lower case
       const cleanedUsername = username.replace(/^@/, "").toLowerCase();
@@ -30,7 +31,7 @@ const VerifyEntry = ({ onUserVerified }) => {
         setMessage(
           `✅ Thank you @${cleanedUsername} for purchasing tickets for today's draw! Your participation is recorded.`
         );
-        onUserVerified(userEntry); // Add user to Today's Entrants List
+        onUserVerified(userEntry); // Call the provided function (default is no-op)
       } else {
         setMessage("❌ No valid transaction found for this username. Please check again!");
       }
