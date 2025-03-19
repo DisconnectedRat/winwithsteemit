@@ -48,7 +48,7 @@ const NumberRoller = ({ onSelect }) => {
 
     // **Send Ticket Data to API for storage**
     try {
-      await fetch("/api/storeTickets", {
+      await fetch("/api/storeTicket", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
