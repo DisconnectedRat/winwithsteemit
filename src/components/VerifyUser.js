@@ -2,10 +2,11 @@
 import { useState } from "react";
 import { fetchSteemTransactions } from "@/utils/steemAPI";
 
-const VerifyEntry = ({ onUserVerified = () => {} }) => {
+const VerifyEntry = ({ onUserVerified = () => {}, selectedTickets = [] }) => {
   const [username, setUsername] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [lastVerifiedMemo, setLastVerifiedMemo] = useState(null);
 
   const handleVerify = async () => {
     if (!username.trim()) {
@@ -16,7 +17,7 @@ const VerifyEntry = ({ onUserVerified = () => {} }) => {
     setMessage("");
 
     try {
-      // Fetch recent transactions from our custom API route
+      // Fetch recent transactions from our API route
       const response = await fetchSteemTransactions();
       console.log("VerifyEntry received:", response);
 
@@ -27,51 +28,56 @@ const VerifyEntry = ({ onUserVerified = () => {} }) => {
       const { transactions } = response;
       const cleanedUsername = username.replace(/^@/, "").toLowerCase();
 
-      // Get current time and cutoff (24 hours ago)
+      // Define cutoff: transactions within the last 24 hours
       const now = new Date();
       const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-      // Filter transactions to include only those within the last 24 hours
-      const recentTransactions = transactions.filter(tx => {
+      // Filter transactions: only those within the last 24 hours
+      const recentTransactions = transactions.filter((tx) => {
         const txTime = new Date(tx.timestamp);
         return txTime >= cutoff;
       });
 
+      // Find a transaction for the user
       const userEntry = recentTransactions.find(
         (entry) => entry.username.toLowerCase() === cleanedUsername
       );
 
       if (userEntry) {
-        setMessage(
-          `✅ Thank you @${cleanedUsername} for purchasing tickets for today's draw! Your participation is recorded.`
-        );
-
-        // Prepare ticket data to store in Firestore
-        // Here, we assume that ticket details (like ticket numbers) are generated
-        // and stored by your NumberRoller component. Adjust as needed.
-        const ticketData = {
-          username: cleanedUsername,
-          // Example: using the memo from the transaction to extract ticket number(s)
-          tickets: [userEntry.memo.replace(/^Lottery\s/, "")],
-          memo: userEntry.memo,
-          timestamp: new Date().toISOString(),
-        };
-
-        // Call the /api/storeTicket endpoint to save the ticket
-        const storeResponse = await fetch("/api/storeTicket", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(ticketData),
-        });
-        const storeResult = await storeResponse.json();
-        if (storeResult.success) {
-          console.log("Ticket stored successfully:", storeResult.message);
+        // Check if the same transaction (by memo) was already verified
+        if (lastVerifiedMemo && userEntry.memo === lastVerifiedMemo) {
+          setMessage("❌ This transaction has already been verified. Please refresh the page in 30sec to see the entry.");
         } else {
-          console.error("Failed to store ticket:", storeResult.error);
+          setMessage(
+            `✅ Thank you @${cleanedUsername} for purchasing tickets for today's draw! Your participation is recorded.`
+          );
+          // Save the memo to prevent duplicate entries
+          setLastVerifiedMemo(userEntry.memo);
+
+          // Prepare ticket data using the selectedTickets from NumberRoller
+          const ticketData = {
+            username: cleanedUsername,
+            tickets: selectedTickets, // Using the selected ticket numbers
+            memo: userEntry.memo,
+            timestamp: new Date().toISOString(),
+          };
+
+          // Call the storeTicket API endpoint to store the ticket in Firestore
+          const storeResponse = await fetch("/api/storeTicket", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ticketData),
+          });
+          const storeResult = await storeResponse.json();
+          if (storeResult.success) {
+            console.log("Ticket stored successfully:", storeResult.message);
+          } else {
+            console.error("Failed to store ticket:", storeResult.error);
+          }
+          
+          // Notify the parent to update the Confirmed Participants table
+          onUserVerified(userEntry);
         }
-        
-        // Notify parent to update the Confirmed Participants table
-        onUserVerified(userEntry);
       } else {
         setMessage("❌ No valid transaction found for this username in the last 24 hours. Please check again!");
       }
