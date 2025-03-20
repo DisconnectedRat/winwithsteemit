@@ -1,10 +1,17 @@
 "use client";
 import { useState } from "react";
 
-const NumberRoller = ({ onSelect }) => {
-  const numbers = [...Array(10).keys()];
+const NumberRoller = ({
+  username, // Dynamic username passed from parent/context
+  selectedTickets: externalSelectedTickets = [], // Selected tickets passed from parent
+  onTicketsUpdate = () => {}, // Callback to update parent's selected tickets
+}) => {
+  // Local state for selected numbers (roller values)
   const [selectedNumbers, setSelectedNumbers] = useState([0, 0, 0]);
-  const [selectedTickets, setSelectedTickets] = useState([]);
+  // Local state for selected tickets if parent does not supply them
+  const [localSelectedTickets, setLocalSelectedTickets] = useState([]);
+  const selectedTickets = externalSelectedTickets.length > 0 ? externalSelectedTickets : localSelectedTickets;
+  
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [memo, setMemo] = useState("");
   const [copyMemoText, setCopyMemoText] = useState("Copy Memo");
@@ -28,7 +35,11 @@ const NumberRoller = ({ onSelect }) => {
   const confirmSelection = () => {
     const newTicket = selectedNumbers.join("");
     if (!selectedTickets.includes(newTicket) && selectedTickets.length < 100) {
-      setSelectedTickets([...selectedTickets, newTicket]);
+      const updatedTickets = [...selectedTickets, newTicket];
+      // Update local state
+      setLocalSelectedTickets(updatedTickets);
+      // Also update parent's state if callback is provided
+      onTicketsUpdate(updatedTickets);
     }
   };
 
@@ -36,24 +47,25 @@ const NumberRoller = ({ onSelect }) => {
   const handleConfirmPurchase = async () => {
     if (selectedTickets.length === 0) return;
 
-    const firstTicket = parseInt(selectedTickets[0]); // Convert to number
-    const totalSTEEM = selectedTickets.length; // Total STEEM required
-    // Keeping the existing encryption logic
+    // Generate memo using the existing logic
+    const firstTicket = parseInt(selectedTickets[0], 10);
+    const totalSTEEM = selectedTickets.length;
     const todayDate = new Date().toISOString().split("T")[0].replace(/-/g, "");
-    const encryptedNumber = firstTicket * totalSTEEM * parseInt(todayDate);
+    const encryptedNumber = firstTicket * totalSTEEM * parseInt(todayDate, 10);
     const finalMemo = `Lottery ${encryptedNumber}`;
 
+    // Set memo and mark confirmation ONLY here
     setMemo(finalMemo);
     setIsConfirmed(true);
 
-    // **Send Ticket Data to API for storage**
+    // Call the API endpoint to store ticket data with the dynamic username and ticket details
     try {
       await fetch("/api/storeTicket", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: username, // ✅ Fetch username dynamically in the future
-          tickets: selectedTickets,
+          username,               // dynamic from prop
+          tickets: selectedTickets, // array of ticket numbers
           memo: finalMemo,
           timestamp: new Date().toISOString(),
         }),
@@ -67,7 +79,7 @@ const NumberRoller = ({ onSelect }) => {
   const copyToClipboard = (text, setButtonText) => {
     navigator.clipboard.writeText(text).then(() => {
       setButtonText("Copied! ✅");
-      setTimeout(() => setButtonText("Copy"), 2000); // Reset after 2s
+      setTimeout(() => setButtonText("Copy"), 2000);
     });
   };
 
@@ -75,7 +87,7 @@ const NumberRoller = ({ onSelect }) => {
     <div className="flex flex-col items-center">
       <h2 className="text-lg font-semibold mb-5">Pick Your Numbers</h2>
 
-      {/* **Number Roller** */}
+      {/* Number Roller UI */}
       <div className="flex space-x-6">
         {selectedNumbers.map((num, index) => (
           <div key={index} className="flex flex-col items-center space-y-1">
@@ -87,11 +99,7 @@ const NumberRoller = ({ onSelect }) => {
             </button>
             <div className="flex flex-col items-center w-16 h-24">
               <span className="text-gray-400 text-lg">{(num + 9) % 10}</span>
-              <span
-                className={`font-bold ${
-                  index === 0 ? "text-red-500 text-4xl" : "text-black text-4xl"
-                }`}
-              >
+              <span className={`font-bold ${index === 0 ? "text-red-500 text-4xl" : "text-black text-4xl"}`}>
                 {num}
               </span>
               <span className="text-gray-400 text-lg">{(num + 1) % 10}</span>
@@ -106,7 +114,7 @@ const NumberRoller = ({ onSelect }) => {
         ))}
       </div>
 
-      {/* **SELECT Button** */}
+      {/* SELECT Button */}
       <button
         className="mt-4 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
         onClick={confirmSelection}
@@ -114,7 +122,7 @@ const NumberRoller = ({ onSelect }) => {
         SELECT
       </button>
 
-      {/* **Selected Tickets** */}
+      {/* Display Selected Tickets */}
       <p className="mt-4 font-bold">🎟️ Selected Ticket Numbers:</p>
       <div className="grid grid-cols-5 gap-2 mt-2">
         {selectedTickets.map((ticket, index) => (
@@ -124,39 +132,31 @@ const NumberRoller = ({ onSelect }) => {
         ))}
       </div>
 
-      {/* **Confirm & Purchase Button** */}
+      {/* Confirm & Purchase Button */}
       <button
-        className={`mt-4 px-4 py-2 rounded-lg ${
-          selectedTickets.length > 0
-            ? "bg-blue-500 hover:bg-blue-600 text-white"
-            : "bg-gray-400 text-gray-700 cursor-not-allowed"
-        }`}
+        className={`mt-4 px-4 py-2 rounded-lg ${selectedTickets.length > 0 ? "bg-blue-500 hover:bg-blue-600 text-white" : "bg-gray-400 text-gray-700 cursor-not-allowed"}`}
         onClick={handleConfirmPurchase}
         disabled={selectedTickets.length === 0}
       >
         Confirm & Purchase
       </button>
 
-      {/* **Payment Instructions (AFTER PURCHASE) - Fixed Functionality** */}
+      {/* Payment Instructions - Only appear after Confirm & Purchase */}
       {isConfirmed && (
         <div className="mt-4 p-4 bg-gray-100 border border-gray-300 rounded-lg shadow-md">
           <h3 className="text-lg font-bold text-gray-700 mb-2">💰 Payment Instructions:</h3>
           <p className="text-gray-600">
-            Send <strong>{selectedTickets.length} STEEM</strong> to the <strong>winwithsteemit</strong> account  
-            via your wallet. Be sure to copy and paste your memo in the transfer. 
-            Once the payment is complete, verify your transaction on the{" "}
+            Send <strong>{selectedTickets.length} STEEM</strong> to the <strong>{lotteryAccount}</strong> account via your wallet.
+            Be sure to copy and paste your memo in the transfer. Once the payment is complete, verify your transaction on the{" "}
             <a
               href="https://winwithsteemit.com/entrants"
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 font-bold hover:underline"
             >
-              Today&apos;s Entrants
-            </a>{" "}
-            page.
+              Today&aposs Entrants
+            </a> page.
           </p>
-
-          {/* Copy Account Section */}
           <div className="flex items-center mt-2">
             <input
               type="text"
@@ -171,8 +171,6 @@ const NumberRoller = ({ onSelect }) => {
               {copyAccountText}
             </button>
           </div>
-
-          {/* Copy Memo Section */}
           <div className="mt-4">
             <p className="text-gray-600">Memo:</p>
             <div className="flex items-center">

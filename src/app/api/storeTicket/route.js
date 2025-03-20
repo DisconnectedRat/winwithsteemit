@@ -17,11 +17,10 @@ export async function POST(request) {
       );
     }
     
-    // Ensure tickets is an array.
-    // If it's a string, wrap it in an array.
+    // Ensure tickets is an array
     const ticketArray = Array.isArray(tickets) ? tickets : [tickets];
 
-    // Format the data:
+    // Format the data
     const formattedTicketData = {
       username,
       ticketsBought: ticketArray.length,
@@ -30,7 +29,7 @@ export async function POST(request) {
       timestamp,
     };
     
-    // Write the formatted ticket data to Firestore in the "purchasedTickets" collection.
+    // Write the formatted ticket data to Firestore in the "purchasedTickets" collection
     await firestore.collection("purchasedTickets").add(formattedTicketData);
     console.log("Ticket stored successfully in Firestore:", formattedTicketData);
     
