@@ -154,7 +154,7 @@ const NumberRoller = ({
               rel="noopener noreferrer"
               className="text-blue-600 font-bold hover:underline"
             >
-              Today&aposs Entrants
+              Today&apos;s Entrants
             </a> page.
           </p>
           <div className="flex items-center mt-2">
