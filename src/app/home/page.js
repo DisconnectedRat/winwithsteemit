@@ -43,32 +43,48 @@ export default function HomePage() {
 
         {/* 🌍 Footer Links */}
         <div className="mt-6 text-center border-t pt-4">
-          <a href="https://steemit.com/winwithsteemit/@winwithsteemit/how-to-play-steemit-lottery-your-guide-to-winning-big" className="text-blue-500 hover:underline mx-2">
+          <a
+            href="https://steemit.com/winwithsteemit/@winwithsteemit/how-to-play-steemit-lottery-your-guide-to-winning-big"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 hover:underline mx-2"
+          >
             How to Play
           </a>
           |
-          <a href="https://steemit.com/winwithsteemit/@winwithsteemit/about-steemit-lottery-ticket-pick-your-lucky-number-and-win-big-on-steemit" className="text-blue-500 hover:underline mx-2">
+          <a
+            href="https://steemit.com/winwithsteemit/@winwithsteemit/about-steemit-lottery-ticket-pick-your-lucky-number-and-win-big-on-steemit"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 hover:underline mx-2"
+          >
             About Ticket
           </a>
           |
-          <a href="https://steemit.com/winwithsteemit/@winwithsteemit/winning-conditions-and-payment-structures" className="text-blue-500 hover:underline mx-2">
+          <a
+            href="https://steemit.com/winwithsteemit/@winwithsteemit/winning-conditions-and-payment-structures"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 hover:underline mx-2"
+          >
             Winning Condition
           </a>
         </div>
 
-        {/* 💙 Credit Line */}
-        <p className="mt-4 text-center text-sm text-gray-500">
-          A cheesy masterpiece of luck and numbers ❤ by{" "}
-          <a
-            href="https://steemit.com/@disconnect/posts"
-            className="text-blue-600 font-bold hover:underline"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            disconnected rat
-          </a>
-        </p>
+
+          {/* 💙 Credit Line */}
+          <p className="mt-4 text-center text-sm text-gray-500">
+            A cheesy masterpiece of luck and numbers ❤ by{" "}
+            <a
+              href="https://steemit.com/@disconnect/posts"
+              className="text-blue-600 font-bold hover:underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              disconnected rat
+            </a>
+          </p>
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }

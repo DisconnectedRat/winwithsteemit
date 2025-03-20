@@ -52,7 +52,7 @@ const NumberRoller = ({ onSelect }) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: "disconnect", // ✅ Fetch username dynamically in the future
+          username: username, // ✅ Fetch username dynamically in the future
           tickets: selectedTickets,
           memo: finalMemo,
           timestamp: new Date().toISOString(),
