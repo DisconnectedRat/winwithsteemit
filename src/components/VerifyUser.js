@@ -1,20 +1,15 @@
 "use client";
 import { useState, useEffect } from "react";
 import { fetchSteemTransactions } from "@/utils/steemAPI";
+import { useTicket } from "@/context/TicketContext";
 
-const VerifyUser = ({
-  username = "",
-  onUsernameChange = () => {},
-  selectedTickets = [],
-  memo = "",
-  onUserVerified = () => {},
-}) => {
-  // Manage the username locally so the input is editable.
+const VerifyUser = ({ onUserVerified = () => {} }) => {
+  const { username, setUsername, selectedTickets, memo } = useTicket();
   const [localUsername, setLocalUsername] = useState(username);
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // When the parent-provided username changes, update the local state.
+  // Sync localUsername with context username
   useEffect(() => {
     setLocalUsername(username);
   }, [username]);
@@ -32,8 +27,7 @@ const VerifyUser = ({
     setMessage("");
 
     try {
-      // In this revised flow, we immediately combine the data and store it,
-      // without waiting for the Steemit transaction check.
+      // Immediately combine the data and store it
       const ticketsBought = selectedTickets.length;
       const ticketNumbers = selectedTickets.join(", ");
       const payload = {
@@ -42,9 +36,9 @@ const VerifyUser = ({
         ticketsBought,
         ticketNumbers,
         memo,
-        timestamp: new Date().toISOString(),
+        timestamp: admin.firestore.Timestamp.now(),// Store the current time as a Firestore Timestamp
         isValid: false, // Initially false; can be updated later if transaction is validated
-      };
+      };  
 
       const storeResponse = await fetch("/api/storeTicket", {
         method: "POST",
@@ -73,7 +67,7 @@ const VerifyUser = ({
         value={localUsername}
         onChange={(e) => {
           setLocalUsername(e.target.value);
-          onUsernameChange(e.target.value);
+          setUsername(e.target.value);
         }}
         placeholder="Enter your Steemit username"
         className="border p-2 rounded w-64 text-center"

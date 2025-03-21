@@ -15,7 +15,6 @@ const ResultsPage = () => {
       // Fetch winning number
       const response = await fetch("/api/fetchWinningNumber");
       const data = await response.json();
-      // Use the returned winning number or null if missing to avoid null errors
       setWinningNumber(data?.winningNumber || null);
 
       // Fetch total prize distributed
@@ -33,10 +32,12 @@ const ResultsPage = () => {
       const winnersData = await winnersResponse.json();
       setTodaysWinners(winnersData?.yesterdayWinners || []);
 
-      // Fetch past winning numbers
+      // Fetch past winning numbers and sort descending by date
       const pastResultsResponse = await fetch("/api/fetchPastWinningNumbers");
       const pastResultsData = await pastResultsResponse.json();
-      setPastResults(pastResultsData?.pastWinningNumbers || []);
+      const pastWinningNumbers = pastResultsData?.pastWinningNumbers || [];
+      pastWinningNumbers.sort((a, b) => new Date(b.date) - new Date(a.date));
+      setPastResults(pastWinningNumbers);
     } catch (error) {
       console.error("❌ Error fetching results:", error);
     }

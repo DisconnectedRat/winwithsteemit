@@ -6,21 +6,47 @@ import { sendSteemPayment } from "@/utils/steemAPI";
 const WINNING_NUMBERS_COLLECTION = "winningNumbers";
 const JACKPOT_WINNERS_COLLECTION = "jackpotWinners";
 const PRIZE_HISTORY_COLLECTION = "prizeHistory";
+const PAST_WINNERS_COLLECTION = "pastWinners"; // New collection for historical records
 
 /**
- * 🔹 Fetch confirmed lottery entrants
- *   (Placeholder or connect to Steemit API logic)
+ * 🔹 Fetch confirmed lottery entrants from "purchasedTickets" for yesterday.
  */
 export async function fetchConfirmedEntrants() {
   try {
-    console.log("✅ Fetching confirmed lottery entrants...");
-    // Replace with actual logic to retrieve entrants.
-    // Example:
-    // const response = await fetch("/api/fetchSteemTransactions");
-    // const data = await response.json();
-    return []; // Placeholder
+    // Calculate yesterday's date range in UTC.
+    const now = new Date();
+    // Get today's UTC midnight.
+    const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    // Get yesterday's date by subtracting one day.
+    const yesterdayUTC = new Date(todayUTC);
+    yesterdayUTC.setUTCDate(todayUTC.getUTCDate() - 1);
+    
+    // Define start and end of yesterday in UTC.
+    const startOfYesterday = new Date(Date.UTC(
+      yesterdayUTC.getUTCFullYear(),
+      yesterdayUTC.getUTCMonth(),
+      yesterdayUTC.getUTCDate(), 0, 0, 0
+    ));
+    const endOfYesterday = new Date(Date.UTC(
+      yesterdayUTC.getUTCFullYear(),
+      yesterdayUTC.getUTCMonth(),
+      yesterdayUTC.getUTCDate(), 23, 59, 59, 999
+    ));
+    
+    // Query "purchasedTickets" for documents with a timestamp within yesterday.
+    const snapshot = await firestore.collection('purchasedTickets')
+      .where('timestamp', '>=', startOfYesterday)
+      .where('timestamp', '<=', endOfYesterday)
+      .get();
+    
+    const entrants = [];
+    snapshot.forEach(doc => {
+      entrants.push({ id: doc.id, ...doc.data() });
+    });
+    
+    return entrants;
   } catch (error) {
-    console.error("❌ Error fetching confirmed entrants:", error);
+    console.error("Error fetching confirmed entrants:", error);
     return [];
   }
 }
@@ -198,6 +224,11 @@ export async function fetchTotalPrize() {
 
 /**
  * 🔹 Process winners and distribute prizes
+ *   - Fetches confirmed entrants
+ *   - Compares each entrant's tickets to the winning number
+ *   - Calculates prizes
+ *   - Sends payments via sendSteemPayment
+ *   - Stores a historical record in the "pastWinners" collection
  */
 export async function distributePrizes() {
   try {
@@ -210,7 +241,7 @@ export async function distributePrizes() {
       return;
     }
 
-    // Identify winners
+    // Identify winners by comparing each ticket with the winning number
     let jackpotWinners = [];
     entrants.forEach(({ username, tickets }) => {
       tickets.forEach((ticket) => {
@@ -223,6 +254,7 @@ export async function distributePrizes() {
     const jackpotAmount = 50;
     const jackpotPrizePerWinner = jackpotWinners.length > 0 ? jackpotAmount / jackpotWinners.length : 0;
 
+    // Calculate prize per entrant
     entrants.forEach(({ username, tickets }) => {
       let totalPrize = 0;
       let winningTickets = [];
@@ -239,10 +271,25 @@ export async function distributePrizes() {
       }
     });
 
-    // Send payments
+    // Send payments and store historical records in the "pastWinners" collection
     for (const tx of prizeTransactions) {
-      await sendSteemPayment(tx.username, tx.amount, `Winning Prize for Tickets: ${tx.winningTickets.join(", ")}`);
+      await sendSteemPayment(
+        tx.username,
+        tx.amount,
+        `Winning Prize for Tickets: ${tx.winningTickets.join(", ")}`
+      );
       console.log(`✅ Sent ${tx.amount} STEEM to ${tx.username}`);
+
+      // Store historical record for this winner
+      await firestore.collection(PAST_WINNERS_COLLECTION).add({
+        username: tx.username,
+        amount: tx.amount,
+        winningTickets: tx.winningTickets,
+        winningNumber: winningNumber,
+        date: new Date().toISOString().split("T")[0],
+        createdAt: new Date().toISOString(),
+      });
+      console.log(`✅ Recorded prize history for ${tx.username}`);
     }
   } catch (error) {
     console.error("❌ Error in prize distribution:", error);

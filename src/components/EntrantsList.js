@@ -50,10 +50,16 @@ const EntrantsList = () => {
               <tr key={index} className="text-center">
                 <td className="border px-4 py-2">@{entry.username}</td>
                 <td className="border px-4 py-2">
-                  {Array.isArray(entry.tickets) ? entry.tickets.length : 0}
+                  {entry.ticketsBought !== undefined
+                    ? entry.ticketsBought
+                    : Array.isArray(entry.tickets)
+                    ? entry.tickets.length
+                    : 0}
                 </td>
                 <td className="border px-4 py-2">
-                  {Array.isArray(entry.tickets)
+                  {entry.ticketNumbers !== undefined
+                    ? entry.ticketNumbers
+                    : Array.isArray(entry.tickets)
                     ? entry.tickets.join(", ")
                     : "N/A"}
                 </td>

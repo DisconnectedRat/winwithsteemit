@@ -1,19 +1,12 @@
 "use client";
 import { useState } from "react";
+import { useTicket } from "@/context/TicketContext";
 
-const NumberRoller = ({
-  username, // Dynamic username passed from parent/context
-  selectedTickets: externalSelectedTickets = [], // Selected tickets passed from parent
-  onTicketsUpdate = () => {}, // Callback to update parent's selected tickets
-}) => {
+const NumberRoller = () => {
+  const { username, selectedTickets, setSelectedTickets, memo, setMemo } = useTicket();
   // Local state for selected numbers (roller values)
   const [selectedNumbers, setSelectedNumbers] = useState([0, 0, 0]);
-  // Local state for selected tickets if parent does not supply them
-  const [localSelectedTickets, setLocalSelectedTickets] = useState([]);
-  const selectedTickets = externalSelectedTickets.length > 0 ? externalSelectedTickets : localSelectedTickets;
-  
   const [isConfirmed, setIsConfirmed] = useState(false);
-  const [memo, setMemo] = useState("");
   const [copyMemoText, setCopyMemoText] = useState("Copy Memo");
   const [copyAccountText, setCopyAccountText] = useState("Copy Account");
   const lotteryAccount = "winwithsteemit"; // Steemit lottery account
@@ -35,11 +28,7 @@ const NumberRoller = ({
   const confirmSelection = () => {
     const newTicket = selectedNumbers.join("");
     if (!selectedTickets.includes(newTicket) && selectedTickets.length < 100) {
-      const updatedTickets = [...selectedTickets, newTicket];
-      // Update local state
-      setLocalSelectedTickets(updatedTickets);
-      // Also update parent's state if callback is provided
-      onTicketsUpdate(updatedTickets);
+      setSelectedTickets([...selectedTickets, newTicket]);
     }
   };
 
@@ -54,7 +43,7 @@ const NumberRoller = ({
     const encryptedNumber = firstTicket * totalSTEEM * parseInt(todayDate, 10);
     const finalMemo = `Lottery ${encryptedNumber}`;
 
-    // Set memo and mark confirmation ONLY here
+    // Set memo in context and mark confirmation
     setMemo(finalMemo);
     setIsConfirmed(true);
 
@@ -64,7 +53,7 @@ const NumberRoller = ({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username,               // dynamic from prop
+          username,               // dynamic from context
           tickets: selectedTickets, // array of ticket numbers
           memo: finalMemo,
           timestamp: new Date().toISOString(),
@@ -99,7 +88,11 @@ const NumberRoller = ({
             </button>
             <div className="flex flex-col items-center w-16 h-24">
               <span className="text-gray-400 text-lg">{(num + 9) % 10}</span>
-              <span className={`font-bold ${index === 0 ? "text-red-500 text-4xl" : "text-black text-4xl"}`}>
+              <span
+                className={`font-bold ${
+                  index === 0 ? "text-red-500 text-4xl" : "text-black text-4xl"
+                }`}
+              >
                 {num}
               </span>
               <span className="text-gray-400 text-lg">{(num + 1) % 10}</span>
@@ -134,7 +127,11 @@ const NumberRoller = ({
 
       {/* Confirm & Purchase Button */}
       <button
-        className={`mt-4 px-4 py-2 rounded-lg ${selectedTickets.length > 0 ? "bg-blue-500 hover:bg-blue-600 text-white" : "bg-gray-400 text-gray-700 cursor-not-allowed"}`}
+        className={`mt-4 px-4 py-2 rounded-lg ${
+          selectedTickets.length > 0
+            ? "bg-blue-500 hover:bg-blue-600 text-white"
+            : "bg-gray-400 text-gray-700 cursor-not-allowed"
+        }`}
         onClick={handleConfirmPurchase}
         disabled={selectedTickets.length === 0}
       >
@@ -155,7 +152,8 @@ const NumberRoller = ({
               className="text-blue-600 font-bold hover:underline"
             >
               Today&apos;s Entrants
-            </a> page.
+            </a>{" "}
+            page.
           </p>
           <div className="flex items-center mt-2">
             <input
