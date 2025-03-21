@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import { fetchSteemTransactions } from "@/utils/steemAPI";
 import { useTicket } from "@/context/TicketContext";
 
 const VerifyUser = ({ onUserVerified = () => {} }) => {
@@ -19,15 +18,12 @@ const VerifyUser = ({ onUserVerified = () => {} }) => {
       setMessage("❌ Please enter a valid Steemit username.");
       return;
     }
-    if (selectedTickets.length === 0 || !memo) {
-      setMessage("❌ Ticket details are missing. Please complete ticket selection.");
-      return;
-    }
+    // Remove the check for ticket details so the process goes ahead even if they're missing.
     setLoading(true);
     setMessage("");
 
     try {
-      // Immediately combine the data and store it
+      // Immediately combine the data from context and send it to /api/storeTicket.
       const ticketsBought = selectedTickets.length;
       const ticketNumbers = selectedTickets.join(", ");
       const payload = {
@@ -36,9 +32,9 @@ const VerifyUser = ({ onUserVerified = () => {} }) => {
         ticketsBought,
         ticketNumbers,
         memo,
-        timestamp: admin.firestore.Timestamp.now(),// Store the current time as a Firestore Timestamp
-        isValid: false, // Initially false; can be updated later if transaction is validated
-      };  
+        timestamp: new Date().toISOString(),
+        isValid: false, // initially false; can be updated later if validated
+      };
 
       const storeResponse = await fetch("/api/storeTicket", {
         method: "POST",
