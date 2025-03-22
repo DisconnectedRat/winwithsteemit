@@ -19,10 +19,10 @@ const VerifyUser = ({ onUserVerified = () => {} }) => {
     setMessage("");
 
     try {
-      const response = await fetch("/api/verifyPayment", {
+      await fetch("/api/verifyPayment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: cleanUsername, memo }),
+        body: JSON.stringify({ username: cleanUsername }), // ✅ This is the real user input
       });
 
       const result = await response.json();
