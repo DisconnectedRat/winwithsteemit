@@ -1,48 +1,117 @@
+import { NextResponse } from "next/server";
 import { firestore } from "@/utils/firebaseAdmin";
 
-export async function GET(request) {
+// Steemit API endpoint
+const STEEM_API_URL = "https://api.steemit.com";
+
+// Utility to check if a timestamp is within the last 3 days
+const isWithinLast3Days = (timestamp) => {
+  const ticketDate = new Date(timestamp);
+  const now = new Date();
+  const diffTime = now.getTime() - ticketDate.getTime();
+  const diffDays = diffTime / (1000 * 60 * 60 * 24);
+  return diffDays <= 3;
+};
+
+// Utility to check if timestamp is from today
+const isToday = (timestamp) => {
+  const date = new Date(timestamp);
+  const now = new Date();
+  return (
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear()
+  );
+};
+
+// 📌 POST Method: Payment verification and ticket validation
+export async function POST(req) {
   try {
-    // Fetch all purchased ticket documents from Firestore
-    const snapshot = await firestore.collection("purchasedTickets").get();
-    let tickets = [];
-    snapshot.forEach((doc) => {
-      // Each document is expected to have at least a 'timestamp' field (as an ISO string)
-      tickets.push(doc.data());
+    const { username, memo } = await req.json();
+    if (!username || !memo) {
+      return NextResponse.json({ success: false, error: "Missing fields" }, { status: 400 });
+    }
+
+    // Step 1: Fetch recent transactions
+    const result = await fetch(STEEM_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: 1,
+        jsonrpc: "2.0",
+        method: "condenser_api.get_account_history",
+        params: [username, -1, 100],
+      }),
     });
 
-    const now = new Date();
-    // Define the current UTC day's start and end
-    const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    const endOfTodayUTC = new Date(startOfTodayUTC.getTime() + 24 * 60 * 60 * 1000);
+    const { result: history } = await result.json();
 
-    // Filter tickets for the current 24-hour window
-    const todaysTickets = tickets.filter((ticket) => {
-      const ticketTime = new Date(ticket.timestamp);
-      return ticketTime >= startOfTodayUTC && ticketTime < endOfTodayUTC;
+    // Step 2: Match payment
+    const match = history.find(([, tx]) => {
+      return (
+        tx.op[0] === "transfer" &&
+        tx.op[1].to === "winwithsteemit" &&
+        tx.op[1].memo === memo
+      );
     });
 
-    // Cleanup: Remove tickets older than 3 days
-    const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-    // Prepare a batch for deletion
-    const batch = firestore.batch();
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      const ticketTime = new Date(data.timestamp);
-      if (ticketTime < threeDaysAgo) {
-        batch.delete(doc.ref);
+    if (match) {
+      const snapshot = await firestore
+        .collection("purchasedTickets")
+        .where("username", "==", username)
+        .where("memo", "==", memo)
+        .limit(1)
+        .get();
+
+      if (!snapshot.empty) {
+        const doc = snapshot.docs[0];
+        const docRef = doc.ref;
+        const ticketData = doc.data();
+
+        // ⛔ Reject if older than 3 days
+        if (!isWithinLast3Days(ticketData.timestamp)) {
+          await docRef.update({ isValid: false, expired: true });
+          return NextResponse.json({ success: false, error: "Ticket expired (older than 3 days)." });
+        }
+
+        // ✅ Mark valid
+        await docRef.update({ isValid: true });
+
+        return NextResponse.json({ success: true, message: "Ticket validated." });
       }
-    });
-    await batch.commit();
+    }
 
-    return new Response(JSON.stringify(todaysTickets), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json({ success: false, error: "No matching payment found." });
   } catch (error) {
-    console.error("❌ Error fetching stored tickets:", error);
-    return new Response(JSON.stringify({ error: "Error fetching stored tickets" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    console.error("Payment verification error:", error);
+    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
+  }
+}
+
+// 📌 GET Method: Return valid tickets (with optional filter for today only)
+export async function GET(req) {
+  try {
+    const url = new URL(req.url);
+    const todayOnly = url.searchParams.get("today") === "true";
+
+    const snapshot = await firestore
+      .collection("purchasedTickets")
+      .where("isValid", "==", true)
+      .get();
+
+    let validTickets = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    // Filter to today's entries only if requested
+    if (todayOnly) {
+      validTickets = validTickets.filter((ticket) => isToday(ticket.timestamp));
+    }
+
+    return NextResponse.json({ success: true, tickets: validTickets });
+  } catch (error) {
+    console.error("GET /api/tickets error:", error);
+    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
   }
 }

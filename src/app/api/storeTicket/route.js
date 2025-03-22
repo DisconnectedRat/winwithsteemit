@@ -1,47 +1,51 @@
 import { firestore } from "@/utils/firebaseAdmin";
 
-export async function POST(request) {
+export async function POST(req) {
   try {
-    // Parse the JSON body from the client
-    const ticketData = await request.json();
-    console.log("Received ticketData:", ticketData); // Debug: log the raw payload
-    
-    // Destructure required fields from the payload
-    const { username, tickets, memo, timestamp } = ticketData;
-    
-    // Validate required fields
-    if (!username || !tickets || !memo || !timestamp) {
+    const { username, tickets, memo, timestamp } = await req.json();
+
+    // ✅ Validate input
+    if (!username || !tickets || tickets.length === 0 || !memo) {
       return new Response(
-        JSON.stringify({ success: false, error: "Missing required fields" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ success: false, error: "Invalid data" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
       );
     }
-    
-    // Ensure tickets is an array
-    const ticketArray = Array.isArray(tickets) ? tickets : [tickets];
 
-    // Format the data
-    const formattedTicketData = {
+    // ✅ Prepare data
+    const ticketNumbers = tickets.join(", ");
+    const ticketsBought = tickets.length;
+
+    // ✅ Store data in Firestore with isValid: false
+    const docRef = await firestore.collection("purchasedTickets").add({
       username,
-      ticketsBought: ticketArray.length,
-      ticketNumbers: ticketArray.join(", "),
+      tickets,
+      ticketNumbers,
+      ticketsBought,
       memo,
       timestamp,
-    };
-    
-    // Write the formatted ticket data to Firestore in the "purchasedTickets" collection
-    await firestore.collection("purchasedTickets").add(formattedTicketData);
-    console.log("Ticket stored successfully in Firestore:", formattedTicketData);
-    
+      isValid: false, // 🚨 Ensures ticket will be verified later
+    });
+
+    // ✅ Return success response
     return new Response(
-      JSON.stringify({ success: true, message: "Ticket stored successfully" }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ success: true, docId: docRef.id }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
     );
   } catch (error) {
-    console.error("Error storing ticket in Firestore:", error);
+    console.error("❌ Error in storeTicket:", error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ success: false, error: "Internal server error" }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
     );
   }
 }

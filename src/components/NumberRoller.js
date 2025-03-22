@@ -3,15 +3,19 @@ import { useState } from "react";
 import { useTicket } from "@/context/TicketContext";
 
 const NumberRoller = () => {
-  const { username, selectedTickets, setSelectedTickets, memo, setMemo } = useTicket();
-  // Local state for selected numbers (roller values)
+  const { setSelectedTickets, selectedTickets, setMemo } = useTicket();
+
   const [selectedNumbers, setSelectedNumbers] = useState([0, 0, 0]);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [copyMemoText, setCopyMemoText] = useState("Copy Memo");
   const [copyAccountText, setCopyAccountText] = useState("Copy Account");
-  const lotteryAccount = "winwithsteemit"; // Steemit lottery account
+  const [memoGenerated, setMemoGenerated] = useState("");
+  const [username, setUsername] = useState("");
+  const [submitMessage, setSubmitMessage] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(false); // ✅ prevent multiple submissions
 
-  // Handle number selection
+  const lotteryAccount = "winwithsteemit";
+
   const handleNumberChange = (index, direction) => {
     setSelectedNumbers((prev) => {
       const newNumbers = [...prev];
@@ -24,7 +28,6 @@ const NumberRoller = () => {
     });
   };
 
-  // **Select Number & Add to Ticket List**
   const confirmSelection = () => {
     const newTicket = selectedNumbers.join("");
     if (!selectedTickets.includes(newTicket) && selectedTickets.length < 100) {
@@ -32,39 +35,58 @@ const NumberRoller = () => {
     }
   };
 
-  // **Encrypt Memo, Confirm Purchase & Store Ticket Data**
-  const handleConfirmPurchase = async () => {
+  const handleConfirmPurchase = () => {
     if (selectedTickets.length === 0) return;
 
-    // Generate memo using the existing logic
     const firstTicket = parseInt(selectedTickets[0], 10);
     const totalSTEEM = selectedTickets.length;
     const todayDate = new Date().toISOString().split("T")[0].replace(/-/g, "");
     const encryptedNumber = firstTicket * totalSTEEM * parseInt(todayDate, 10);
     const finalMemo = `Lottery ${encryptedNumber}`;
 
-    // Set memo in context and mark confirmation
     setMemo(finalMemo);
+    setMemoGenerated(finalMemo);
     setIsConfirmed(true);
+  };
 
-    // Call the API endpoint to store ticket data with the dynamic username and ticket details
+  const handleFinalSubmit = async () => {
+    const cleanUsername = username.replace(/^@/, "").toLowerCase().trim();
+
+    if (!cleanUsername) {
+      setSubmitMessage("❌ Please enter a valid Steemit username.");
+      return;
+    }
+
+    if (isSubmitted) {
+      setSubmitMessage("✅ Your entry has already been submitted.");
+      return;
+    }
+
     try {
-      await fetch("/api/storeTicket", {
+      const response = await fetch("/api/storeTicket", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          username,               // dynamic from context
-          tickets: selectedTickets, // array of ticket numbers
-          memo: finalMemo,
+          username: cleanUsername,
+          tickets: selectedTickets,
+          memo: memoGenerated,
           timestamp: new Date().toISOString(),
         }),
       });
+
+      const result = await response.json();
+      if (result.success) {
+        setSubmitMessage("success"); // Set flag instead of message
+        setIsSubmitted(true);
+      } else {
+        setSubmitMessage("❌ Failed to store your entry. Please try again.");
+      }
     } catch (error) {
-      console.error("❌ Error storing ticket data:", error);
+      console.error("❌ Error submitting ticket:", error);
+      setSubmitMessage("⚠️ Error submitting your entry. Try again later.");
     }
   };
 
-  // **Copy Text to Clipboard Function**
   const copyToClipboard = (text, setButtonText) => {
     navigator.clipboard.writeText(text).then(() => {
       setButtonText("Copied! ✅");
@@ -76,7 +98,7 @@ const NumberRoller = () => {
     <div className="flex flex-col items-center">
       <h2 className="text-lg font-semibold mb-5">Pick Your Numbers</h2>
 
-      {/* Number Roller UI */}
+      {/* Number Roller */}
       <div className="flex space-x-6">
         {selectedNumbers.map((num, index) => (
           <div key={index} className="flex flex-col items-center space-y-1">
@@ -88,11 +110,7 @@ const NumberRoller = () => {
             </button>
             <div className="flex flex-col items-center w-16 h-24">
               <span className="text-gray-400 text-lg">{(num + 9) % 10}</span>
-              <span
-                className={`font-bold ${
-                  index === 0 ? "text-red-500 text-4xl" : "text-black text-4xl"
-                }`}
-              >
+              <span className={`font-bold ${index === 0 ? "text-red-500 text-4xl" : "text-black text-4xl"}`}>
                 {num}
               </span>
               <span className="text-gray-400 text-lg">{(num + 1) % 10}</span>
@@ -138,23 +156,16 @@ const NumberRoller = () => {
         Confirm & Purchase
       </button>
 
-      {/* Payment Instructions - Only appear after Confirm & Purchase */}
+      {/* Payment Instructions */}
       {isConfirmed && (
-        <div className="mt-4 p-4 bg-gray-100 border border-gray-300 rounded-lg shadow-md">
+        <div className="mt-4 p-4 bg-gray-100 border border-gray-300 rounded-lg shadow-md w-full max-w-lg">
           <h3 className="text-lg font-bold text-gray-700 mb-2">💰 Payment Instructions:</h3>
           <p className="text-gray-600">
             Send <strong>{selectedTickets.length} STEEM</strong> to the <strong>{lotteryAccount}</strong> account via your wallet.
-            Be sure to copy and paste your memo in the transfer. Once the payment is complete, verify your transaction on the{" "}
-            <a
-              href="https://winwithsteemit.com/entrants"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 font-bold hover:underline"
-            >
-              Today&apos;s Entrants
-            </a>{" "}
-            page.
+            Be sure to copy and paste your memo in the transfer.
           </p>
+
+          {/* STEEM Account */}
           <div className="flex items-center mt-2">
             <input
               type="text"
@@ -169,23 +180,72 @@ const NumberRoller = () => {
               {copyAccountText}
             </button>
           </div>
+
+          {/* Memo */}
           <div className="mt-4">
             <p className="text-gray-600">Memo:</p>
             <div className="flex items-center">
               <input
                 type="text"
-                value={memo}
+                value={memoGenerated}
                 readOnly
                 className="border px-3 py-2 rounded-md w-full text-gray-700"
               />
               <button
-                onClick={() => copyToClipboard(memo, setCopyMemoText)}
+                onClick={() => copyToClipboard(memoGenerated, setCopyMemoText)}
                 className="ml-2 px-3 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition"
               >
                 {copyMemoText}
               </button>
             </div>
           </div>
+
+          {/* Username Input */}
+          <div className="mt-4">
+            <label className="block text-gray-600 mb-1">Enter your Steemit username:</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="@yourusername"
+              className="w-full border px-3 py-2 rounded-md text-gray-700"
+              disabled={isSubmitted}
+            />
+          </div>
+
+          {/* Final Submit Button */}
+          <button
+            className={`mt-4 w-full py-2 rounded-md transition font-semibold ${
+              isSubmitted
+                ? "bg-gray-400 text-white cursor-not-allowed"
+                : "bg-purple-600 hover:bg-purple-700 text-white"
+            }`}
+            onClick={handleFinalSubmit}
+            disabled={isSubmitted}
+          >
+            {isSubmitted ? "✅ Submitted" : "Submit Entry"}
+          </button>
+
+          {/* Submission Message / Success */}
+          {submitMessage === "success" ? (
+            <div className="mt-4 text-center">
+              <p className="text-green-700 font-semibold mb-2">
+                 Thank you @{username.trim().replace(/^@/, "")}, your entry is recorded!
+              </p>
+              <a
+                href="https://winwithsteemit.com/entrants"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition"
+              >
+                🔎 View My Entry on Today&apos;s Entrants Page
+              </a>
+            </div>
+          ) : (
+            submitMessage && (
+              <p className="mt-3 text-center text-sm text-red-600">{submitMessage}</p>
+            )
+          )}
         </div>
       )}
     </div>
