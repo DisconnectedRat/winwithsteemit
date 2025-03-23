@@ -9,13 +9,16 @@ const EntrantsList = () => {
     fetch("/api/tickets")
       .then((res) => res.json())
       .then((data) => {
-        // Ensure data is an array and filter entries for today's UTC date
         if (Array.isArray(data)) {
           const today = new Date().toISOString().split("T")[0];
-          const todaysEntries = data.filter(
-            (entry) => entry.timestamp && entry.timestamp.startsWith(today)
-          );
-          setEntrants(todaysEntries);
+
+          const filtered = data.filter((entry) => {
+            const isToday = entry.timestamp && entry.timestamp.startsWith(today);
+            const isValid = entry.isValid === true;
+            return isToday && isValid;
+          });
+
+          setEntrants(filtered);
         } else {
           setEntrants([]);
         }
@@ -41,9 +44,7 @@ const EntrantsList = () => {
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan="4" className="border px-4 py-2 text-center">
-                Loading...
-              </td>
+              <td colSpan="4" className="border px-4 py-2 text-center">Loading...</td>
             </tr>
           ) : entrants.length > 0 ? (
             entrants.map((entry, index) => (

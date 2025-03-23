@@ -15,9 +15,6 @@ export async function GET(request) {
     });
 
     const transactions = response.data.result;
-    
-    // Log the timestamp of the latest transaction (if exists)
-    console.log("Latest transaction timestamp:", transactions[0]?.timestamp);
 
     if (!transactions || transactions.length === 0) {
       console.warn("⚠️ [Server] No transactions found.");
@@ -30,26 +27,31 @@ export async function GET(request) {
       });
     }
 
-    // Filter only "transfer" transactions with valid lottery memo, including timestamp
+    // Extract only transfers with valid memo format
     const filteredTransactions = transactions
       .map(([_, tx]) => tx)
       .filter((tx) => tx.op[0] === "transfer")
       .map((tx) => {
         const { from, to, amount, memo } = tx.op[1];
-        const timestamp = tx.timestamp; // Assuming this is an ISO string
-        const cleanedMemo = memo.trim();
+        const timestamp = tx.timestamp || ""; // Fallback if missing
+        const cleanedMemo = memo?.trim() || "";
         const isValidMemo = /^Lottery\s\d+$/.test(cleanedMemo);
         if (to === LOTTERY_ACCOUNT && isValidMemo) {
           return {
             username: from,
             tickets: parseFloat(amount.split(" ")[0]),
             memo: cleanedMemo,
-            timestamp, // include timestamp for further processing if needed
+            timestamp,
           };
         }
         return null;
       })
       .filter((entry) => entry !== null);
+
+    console.log("📄 Found", filteredTransactions.length, "valid lottery transfers.");
+    if (filteredTransactions.length > 0) {
+      console.log("🕒 Latest transaction timestamp:", filteredTransactions[0].timestamp);
+    }
 
     return new Response(JSON.stringify({ success: true, transactions: filteredTransactions }), {
       status: 200,
