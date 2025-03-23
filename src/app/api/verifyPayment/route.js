@@ -7,12 +7,14 @@ export async function POST(req) {
   try {
     const { username } = await req.json();
     if (!username) {
+      console.warn("❌ No username provided");
       return NextResponse.json({ success: false, error: "Missing username" }, { status: 400 });
     }
 
     const cleanUsername = username.toLowerCase().replace(/^@/, "");
+    console.log("🔍 Clean username:", cleanUsername);
 
-    // 🔹 Fetch the most recent ticket entry from Firestore for the given username
+    // Step 1: Firestore Query
     const ticketSnapshot = await firestore
       .collection("purchasedTickets")
       .where("username", "==", cleanUsername)
@@ -21,13 +23,15 @@ export async function POST(req) {
       .get();
 
     if (ticketSnapshot.empty) {
+      console.warn("❌ No ticket found in Firestore");
       return NextResponse.json({ success: false, error: "No ticket found for this user." });
     }
 
     const userEntry = ticketSnapshot.docs[0];
     const expectedMemo = userEntry.data().memo;
+    console.log("🎫 Expected memo from Firestore:", expectedMemo);
 
-    // 🔹 Call Steemit API (add .ok check for safety)
+    // Step 2: Steemit API Request
     const response = await fetch(STEEM_API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -40,7 +44,7 @@ export async function POST(req) {
     });
 
     if (!response.ok) {
-      console.error("❌ Steemit API failed:", response.statusText);
+      console.error("❌ STEEM API failed:", response.statusText);
       return NextResponse.json({ success: false, error: "STEEM API error" }, { status: 500 });
     }
 
@@ -48,10 +52,11 @@ export async function POST(req) {
     const history = steemResponse.result;
 
     if (!history || history.length === 0) {
+      console.warn("⚠️ No recent STEEM transactions found");
       return NextResponse.json({ success: false, error: "No recent transactions found." });
     }
 
-    // 🔹 Look for a transfer to winwithsteemit with matching memo
+    // Step 3: Look for match
     const match = history.find(([, tx]) => {
       return (
         tx.op[0] === "transfer" &&
@@ -61,9 +66,11 @@ export async function POST(req) {
     });
 
     if (match) {
+      console.log("✅ Matching transaction found! Updating Firestore...");
       await userEntry.ref.update({ isValid: true });
       return NextResponse.json({ success: true });
     } else {
+      console.warn("❌ No matching payment found");
       return NextResponse.json({ success: false, error: "No matching payment found." });
     }
   } catch (error) {
