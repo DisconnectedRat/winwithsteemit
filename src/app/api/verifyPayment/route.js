@@ -27,7 +27,7 @@ export async function POST(req) {
     const userEntry = ticketSnapshot.docs[0];
     const expectedMemo = userEntry.data().memo;
 
-    // 🔹 Fetch last 100 transactions of the user from Steem blockchain
+    // 🔹 Call Steemit API (add .ok check for safety)
     const response = await fetch(STEEM_API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -39,6 +39,11 @@ export async function POST(req) {
       }),
     });
 
+    if (!response.ok) {
+      console.error("❌ Steemit API failed:", response.statusText);
+      return NextResponse.json({ success: false, error: "STEEM API error" }, { status: 500 });
+    }
+
     const steemResponse = await response.json();
     const history = steemResponse.result;
 
@@ -46,7 +51,7 @@ export async function POST(req) {
       return NextResponse.json({ success: false, error: "No recent transactions found." });
     }
 
-    // 🔹 Look for a matching transfer with the expected memo
+    // 🔹 Look for a transfer to winwithsteemit with matching memo
     const match = history.find(([, tx]) => {
       return (
         tx.op[0] === "transfer" &&
