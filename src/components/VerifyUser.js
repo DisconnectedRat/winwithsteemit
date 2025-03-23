@@ -1,16 +1,13 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useTicket } from "@/context/TicketContext";
+import { useState } from "react";
 
 const VerifyUser = ({ onUserVerified = () => {} }) => {
-  const { memo } = useTicket(); // Only get memo now
-  const [localUsername, setLocalUsername] = useState(""); // Use only local state
+  const [localUsername, setLocalUsername] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleVerify = async () => {
-    const cleanUsername = localUsername.replace(/^@/, "").toLowerCase().trim();
-    if (!cleanUsername) {
+    if (!localUsername.trim()) {
       setMessage("❌ Please enter a valid Steemit username.");
       return;
     }
@@ -19,22 +16,22 @@ const VerifyUser = ({ onUserVerified = () => {} }) => {
     setMessage("");
 
     try {
-      await fetch("/api/verifyPayment", {
+      const cleanUsername = localUsername.replace(/^@/, "").toLowerCase();
+      const response = await fetch("/api/verifyPayment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: cleanUsername }), // ✅ This is the real user input
+        body: JSON.stringify({ username: cleanUsername }),
       });
 
       const result = await response.json();
-
       if (result.success) {
-        setMessage(`✅ Thank you @${cleanUsername}, your payment was verified!`);
-        onUserVerified(result); // optional callback
+        setMessage(`✅ Thank you @${cleanUsername}, your payment has been verified!`);
+        onUserVerified({ username: cleanUsername });
       } else {
-        setMessage("❌ No payment found with that memo and username.");
+        setMessage(`❌ ${result.error || "No payment found with that username."}`);
       }
     } catch (err) {
-      console.error("Error verifying payment:", err);
+      console.error("Verify error:", err);
       setMessage("⚠️ Server error. Please try again later.");
     }
 
@@ -42,23 +39,24 @@ const VerifyUser = ({ onUserVerified = () => {} }) => {
   };
 
   return (
-    <div className="container mx-auto p-4 text-center">
-      <h2 className="text-xl font-bold mb-4">🔍 Verify Your Lottery Entry</h2>
+    <div className="text-center">
+      <h2 className="text-xl font-bold mb-2">🔍 Verify Your Lottery Entry</h2>
       <input
         type="text"
         value={localUsername}
         onChange={(e) => setLocalUsername(e.target.value)}
         placeholder="@yourusername"
-        className="border p-2 rounded w-64 text-center"
+        className="border px-3 py-2 rounded-md w-72 text-center mb-2"
       />
+      <br />
       <button
         onClick={handleVerify}
-        className="ml-2 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
         disabled={loading}
+        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md"
       >
-        {loading ? "Checking..." : "Verify Entry"}
+        {loading ? "Verifying..." : "Verify Entry"}
       </button>
-      {message && <p className="mt-4 text-lg">{message}</p>}
+      {message && <p className="mt-3 text-sm">{message}</p>}
     </div>
   );
 };
