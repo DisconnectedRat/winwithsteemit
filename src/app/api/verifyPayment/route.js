@@ -14,15 +14,13 @@ export async function POST(req) {
     const cleanUsername = username.toLowerCase().replace(/^@/, "");
     console.log("🔍 Verifying payment for:", cleanUsername);
 
-    // Step 1: Fetch latest ticket entry for the user from Firestore
+    // 🔹 Fetch Firestore memo for this user
     const ticketSnapshot = await firestore
       .collection("purchasedTickets")
       .where("username", "==", cleanUsername)
       .orderBy("timestamp", "desc")
       .limit(1)
       .get();
-
-    console.log("✅ Firestore fetch done");
 
     if (ticketSnapshot.empty) {
       console.warn("❌ No ticket found in Firestore for", cleanUsername);
@@ -33,7 +31,7 @@ export async function POST(req) {
     const expectedMemo = userEntry.data().memo;
     console.log("🎯 Expected memo:", expectedMemo);
 
-    // Step 2: Fetch latest 20 transactions TO winwithsteemit
+    // 🔹 Fetch last 20 transactions of winwithsteemit
     const response = await fetch(STEEM_API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -41,28 +39,24 @@ export async function POST(req) {
         id: 1,
         jsonrpc: "2.0",
         method: "condenser_api.get_account_history",
-        params: ["winwithsteemit", -1, 20], // use lottery account!
+        params: ["winwithsteemit", -1, 20], // limited to 20 max
       }),
     });
 
-    if (!response.ok) {
-      console.error("❌ STEEM API returned non-200 status:", response.status);
-      return NextResponse.json({ success: false, error: "STEEM API error" }, { status: 502 });
-    }
-
     const steemResponse = await response.json();
+
+    // ✅ DEBUG LOGGING
+    console.log("📦 Raw STEEM API response:", JSON.stringify(steemResponse, null, 2));
+
     const history = steemResponse.result;
 
-    console.log("🔎 Raw STEEM API response:", JSON.stringify(steemResponse, null, 2));
-
-    if (!history || !Array.isArray(history)) {
+    if (!Array.isArray(history)) {
       console.error("❌ Invalid STEEM history format:", history);
-      return NextResponse.json({ success: false, error: "Invalid STEEM API format" }, { status: 500 });
+      return NextResponse.json({ success: false, error: "Invalid STEEM response." });
     }
 
     console.log("🔍 Searching for matching memo in", history.length, "transactions");
 
-    // Step 3: Match payment by sender, recipient, and memo
     const match = history.find(([, tx]) => {
       return (
         tx.op[0] === "transfer" &&
@@ -72,7 +66,6 @@ export async function POST(req) {
       );
     });
 
-    // Step 4: Update Firestore if found
     if (match) {
       await userEntry.ref.update({ isValid: true });
       console.log("✅ Payment matched and user marked as valid");

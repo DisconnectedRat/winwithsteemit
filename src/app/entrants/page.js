@@ -26,9 +26,6 @@ export default function EntrantsPage() {
 
         {/* 🔹 Display Confirmed Entrants */}
         <div className="mt-6">
-          <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">
-            📜 Confirmed Participants
-          </h2>
           <div className="overflow-hidden rounded-lg shadow-lg bg-white p-4">
             <EntrantsList verifiedUser={verifiedUser} />
           </div>

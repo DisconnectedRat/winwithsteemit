@@ -162,7 +162,7 @@ const NumberRoller = () => {
           <h3 className="text-lg font-bold text-gray-700 mb-2">💰 Payment Instructions:</h3>
           <p className="text-gray-600">
             Send <strong>{selectedTickets.length} STEEM</strong> to the <strong>{lotteryAccount}</strong> account via your wallet.
-            Be sure to copy and paste your memo in the transfer.
+            Be sure to copy and paste your <strong>memo</strong> in the transfer.
           </p>
 
           {/* STEEM Account */}
@@ -230,7 +230,7 @@ const NumberRoller = () => {
           {submitMessage === "success" ? (
             <div className="mt-4 text-center">
               <p className="text-green-700 font-semibold mb-2">
-                 Thank you @{username.trim().replace(/^@/, "")}, your entry is recorded!
+                 Thank you @{username.trim().replace(/^@/, "")}, your entry is recorded! Kindly follow the Payment Instructions to complete the payment through your wallet.
               </p>
               <a
                 href="https://winwithsteemit.com/entrants"
@@ -238,7 +238,7 @@ const NumberRoller = () => {
                 rel="noopener noreferrer"
                 className="inline-block mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition"
               >
-                🔎 View My Entry on Today&apos;s Entrants Page
+                🔎 View My Ticket
               </a>
             </div>
           ) : (

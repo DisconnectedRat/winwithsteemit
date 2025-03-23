@@ -5,6 +5,23 @@ const VerifyUser = ({ onUserVerified = () => {} }) => {
   const [localUsername, setLocalUsername] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [tries, setTries] = useState(0);
+  const [retrying, setRetrying] = useState(false);
+
+  const verifyPayment = async (username) => {
+    try {
+      const response = await fetch("/api/verifyPayment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username }),
+      });
+      const result = await response.json();
+      return result;
+    } catch (err) {
+      console.error("Verify error:", err);
+      return { success: false, error: "Server error" };
+    }
+  };
 
   const handleVerify = async () => {
     if (!localUsername.trim()) {
@@ -12,30 +29,33 @@ const VerifyUser = ({ onUserVerified = () => {} }) => {
       return;
     }
 
+    const cleanUsername = localUsername.replace(/^@/, "").toLowerCase();
     setLoading(true);
-    setMessage("");
+    setMessage("⏳ Thank you! Your ticket has been submitted. We’re verifying your payment. It may take up to 5 minutes to confirm on the blockchain.");
 
-    try {
-      const cleanUsername = localUsername.replace(/^@/, "").toLowerCase();
-      const response = await fetch("/api/verifyPayment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: cleanUsername }),
-      });
+    let attempts = 0;
+    const maxTries = 10;
+    const interval = 30000; // 30 seconds
 
-      const result = await response.json();
+    const pollVerification = async () => {
+      const result = await verifyPayment(cleanUsername);
       if (result.success) {
         setMessage(`✅ Thank you @${cleanUsername}, your payment has been verified!`);
         onUserVerified({ username: cleanUsername });
+        setLoading(false);
+        return;
       } else {
-        setMessage(`❌ ${result.error || "No payment found with that username."}`);
+        attempts++;
+        if (attempts < maxTries) {
+          setTimeout(pollVerification, interval);
+        } else {
+          setMessage("❌ Timed out. Please try again later.");
+          setLoading(false);
+        }
       }
-    } catch (err) {
-      console.error("Verify error:", err);
-      setMessage("⚠️ Server error. Please try again later.");
-    }
+    };
 
-    setLoading(false);
+    pollVerification();
   };
 
   return (
@@ -47,6 +67,7 @@ const VerifyUser = ({ onUserVerified = () => {} }) => {
         onChange={(e) => setLocalUsername(e.target.value)}
         placeholder="@yourusername"
         className="border px-3 py-2 rounded-md w-72 text-center mb-2"
+        disabled={loading}
       />
       <br />
       <button
@@ -56,7 +77,7 @@ const VerifyUser = ({ onUserVerified = () => {} }) => {
       >
         {loading ? "Verifying..." : "Verify Entry"}
       </button>
-      {message && <p className="mt-3 text-sm">{message}</p>}
+      {message && <p className="mt-3 text-sm text-gray-700">{message}</p>}
     </div>
   );
 };
