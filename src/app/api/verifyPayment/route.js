@@ -5,16 +5,11 @@ const STEEM_API_URL = "https://api.steemit.com";
 
 export async function POST(req) {
   try {
-    const { username } = await req.json();
-    if (!username) {
-      console.warn("❌ No username provided");
-      return NextResponse.json({ success: false, error: "Missing username" }, { status: 400 });
-    }
+    console.log("✅ verifyPayment route hit");
 
-    const cleanUsername = username.toLowerCase().replace(/^@/, "");
-    console.log("🔍 Clean username:", cleanUsername);
+    const cleanUsername = "disconnect"; // hardcoded
+    console.log("🔍 Using test username:", cleanUsername);
 
-    // Step 1: Firestore Query
     const ticketSnapshot = await firestore
       .collection("purchasedTickets")
       .where("username", "==", cleanUsername)
@@ -24,14 +19,14 @@ export async function POST(req) {
 
     if (ticketSnapshot.empty) {
       console.warn("❌ No ticket found in Firestore");
-      return NextResponse.json({ success: false, error: "No ticket found for this user." });
+      return NextResponse.json({ success: false, error: "No ticket found." });
     }
 
     const userEntry = ticketSnapshot.docs[0];
     const expectedMemo = userEntry.data().memo;
-    console.log("🎫 Expected memo from Firestore:", expectedMemo);
 
-    // Step 2: Steemit API Request
+    console.log("🧾 Fetched memo from Firestore:", expectedMemo);
+
     const response = await fetch(STEEM_API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -44,19 +39,18 @@ export async function POST(req) {
     });
 
     if (!response.ok) {
-      console.error("❌ STEEM API failed:", response.statusText);
-      return NextResponse.json({ success: false, error: "STEEM API error" }, { status: 500 });
+      console.error("❌ Steem API request failed", response.status);
+      return NextResponse.json({ success: false, error: "STEEM API error" });
     }
 
     const steemResponse = await response.json();
-    const history = steemResponse.result;
+    console.log("🔁 STEEM API response received");
 
+    const history = steemResponse.result;
     if (!history || history.length === 0) {
-      console.warn("⚠️ No recent STEEM transactions found");
-      return NextResponse.json({ success: false, error: "No recent transactions found." });
+      return NextResponse.json({ success: false, error: "No recent transactions" });
     }
 
-    // Step 3: Look for match
     const match = history.find(([, tx]) => {
       return (
         tx.op[0] === "transfer" &&
@@ -66,15 +60,15 @@ export async function POST(req) {
     });
 
     if (match) {
-      console.log("✅ Matching transaction found! Updating Firestore...");
+      console.log("🎯 Match found! Memo verified. Updating Firestore...");
       await userEntry.ref.update({ isValid: true });
       return NextResponse.json({ success: true });
     } else {
-      console.warn("❌ No matching payment found");
-      return NextResponse.json({ success: false, error: "No matching payment found." });
+      console.warn("❌ Memo not found in transactions");
+      return NextResponse.json({ success: false, error: "No matching memo" });
     }
-  } catch (error) {
-    console.error("❌ Payment verification error:", error);
-    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
+  } catch (err) {
+    console.error("❌ Hardcoded test error:", err);
+    return NextResponse.json({ success: false, error: "Server error in hardcoded test" }, { status: 500 });
   }
 }
