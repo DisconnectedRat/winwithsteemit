@@ -8,7 +8,7 @@ const EntrantsList = () => {
 
   const fetchEntrants = async () => {
     try {
-      const res = await fetch("/api/tickets?today=true");
+      const res = await fetch("/api/tickets");
       const json = await res.json();
       console.log("🎟️ API Response:", json);
 
@@ -17,7 +17,7 @@ const EntrantsList = () => {
           console.log(`🧾 Ticket ${i + 1}:`, {
             username: t.username,
             timestamp: t.timestamp,
-            type: typeof t.timestamp,
+            isValid: t.isValid,
             raw: t,
           });
         });

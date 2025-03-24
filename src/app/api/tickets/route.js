@@ -25,7 +25,7 @@ export async function POST(req) {
         id: 1,
         jsonrpc: "2.0",
         method: "condenser_api.get_account_history",
-        params: [username, -1, 100],
+        params: [username, -1, 3],
       }),
     });
 
@@ -74,17 +74,25 @@ export async function GET(req) {
   try {
     const snapshot = await firestore
       .collection("purchasedTickets")
-      .where("timestamp", ">", new Date(new Date().setHours(0, 0, 0, 0))) // Only today's entries
+      .where("isValid", "in", [true, false]) // fetch all with valid or pending status
       .get();
 
-    const tickets = snapshot.docs.map((doc) => {
+    let tickets = snapshot.docs.map((doc) => {
       const data = doc.data();
+      const timestamp =
+        data.timestamp?.toDate?.() ?? new Date(data.timestamp); // normalize both Timestamp or string
       return {
         id: doc.id,
         ...data,
-        timestamp: data.timestamp?.toDate?.() ?? data.timestamp, // Normalize Firestore Timestamp
+        timestamp,
       };
     });
+
+    // Filter to only today's entries
+    const today = new Date().toISOString().split("T")[0];
+    tickets = tickets.filter((ticket) =>
+      ticket.timestamp.toISOString().startsWith(today)
+    );
 
     console.log("🎯 Raw tickets from Firestore:", tickets);
 

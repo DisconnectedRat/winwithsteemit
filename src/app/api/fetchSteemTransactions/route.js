@@ -6,7 +6,7 @@ const LOTTERY_ACCOUNT = "winwithsteemit"; // The official lottery account
 export async function GET(request) {
   try {
     console.log(`🔄 [Server] Fetching latest transactions from ${PRIMARY_API} for ${LOTTERY_ACCOUNT}...`);
-    const limit = 5; // Reduced fetch limit
+    const limit = 3; // Reduced fetch limit
     const response = await axios.post(PRIMARY_API, {
       jsonrpc: "2.0",
       method: "condenser_api.get_account_history",
