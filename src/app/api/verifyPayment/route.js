@@ -39,7 +39,7 @@ export async function POST(req) {
         id: 1,
         jsonrpc: "2.0",
         method: "condenser_api.get_account_history",
-        params: ["winwithsteemit", -1, 20], // limited to 20 max
+        params: ["winwithsteemit", -1, 3], // limited to 20 max
       }),
     });
 

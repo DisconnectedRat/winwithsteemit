@@ -6,35 +6,37 @@ const EntrantsList = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => {
-    const fetchEntrants = async () => {
-      try {
-        const res = await fetch("/api/tickets?today=true");
-        const json = await res.json();
-        console.log("🎟️ API Response:", json);
+  const fetchEntrants = async () => {
+    try {
+      const res = await fetch("/api/tickets?today=true");
+      const json = await res.json();
+      console.log("🎟️ API Response:", json);
 
-        if (json.success && Array.isArray(json.tickets)) {
-          json.tickets.forEach((t, i) => {
-            console.log(`🧾 Ticket ${i + 1}:`, {
-              username: t.username,
-              timestamp: t.timestamp,
-              type: typeof t.timestamp,
-              raw: t,
-            });
+      if (json.success && Array.isArray(json.tickets)) {
+        json.tickets.forEach((t, i) => {
+          console.log(`🧾 Ticket ${i + 1}:`, {
+            username: t.username,
+            timestamp: t.timestamp,
+            type: typeof t.timestamp,
+            raw: t,
           });
-          setEntrants(json.tickets);
-        } else {
-          setEntrants([]);
-        }
-      } catch (err) {
-        console.error("Fetch error:", err);
+        });
+        setEntrants(json.tickets);
+      } else {
         setEntrants([]);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setEntrants([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchEntrants();
+    const interval = setInterval(fetchEntrants, 15000); // 🔄 Refresh every 15 seconds
+    return () => clearInterval(interval);
   }, []);
 
   const filteredEntrants = entrants.filter((entry) =>
@@ -62,8 +64,8 @@ const EntrantsList = () => {
           <thead>
             <tr className="bg-gradient-to-r from-blue-100 to-purple-100 text-gray-700">
               <th className="px-4 py-3 text-left font-semibold">👤 User</th>
-              <th className="px-4 py-3 text-center font-semibold">No. of Tickets</th>
-              <th className="px-4 py-3 text-center font-semibold">Ticket Numbers</th>
+              <th className="px-4 py-3 text-center font-semibold">🎟 Tickets</th>
+              <th className="px-4 py-3 text-center font-semibold">🔢 Ticket Numbers</th>
               <th className="px-4 py-3 text-center font-semibold">📝 Memo</th>
               <th className="px-4 py-3 text-center font-semibold">📌 Status</th>
             </tr>
@@ -95,7 +97,7 @@ const EntrantsList = () => {
                   </td>
                   <td className="px-4 py-3 text-center text-sm text-gray-600">{entry.memo}</td>
                   <td className="px-4 py-3 text-center">
-                    {entry.isValid ? (
+                    {entry.isValid === true ? (
                       <span className="text-green-600 font-bold">✅ Confirmed</span>
                     ) : (
                       <span className="text-yellow-500 font-semibold">⏳ Pending</span>

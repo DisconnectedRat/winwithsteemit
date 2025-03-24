@@ -74,7 +74,7 @@ export async function GET(req) {
   try {
     const snapshot = await firestore
       .collection("purchasedTickets")
-      .where("isValid", "==", true)
+      .where("timestamp", ">", new Date(new Date().setHours(0, 0, 0, 0))) // Only today's entries
       .get();
 
     const tickets = snapshot.docs.map((doc) => {
