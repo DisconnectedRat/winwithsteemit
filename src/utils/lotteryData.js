@@ -1,4 +1,3 @@
-"use server";
 import { firestore } from "@/utils/firebaseAdmin";
 import { sendSteemPayment } from "@/utils/steemAPI";
 
@@ -10,6 +9,7 @@ const PAST_WINNERS_COLLECTION = "pastWinners"; // New collection for historical 
 
 /**
  * 🔹 Fetch confirmed lottery entrants from "purchasedTickets" for yesterday.
+ *   Ensures each document has a `tickets` array and that each ticket is a 3-digit string.
  */
 export async function fetchConfirmedEntrants() {
   try {
@@ -45,6 +45,7 @@ export async function fetchConfirmedEntrants() {
     
     const entrants = [];
     snapshot.forEach(doc => {
+      // Optionally, you can normalize tickets here as well (if not already normalized).
       entrants.push({ id: doc.id, ...doc.data() });
     });
     
@@ -270,7 +271,7 @@ export async function distributePrizes() {
       return;
     }
 
-    // Identify winners by comparing each ticket with the winning number
+    // Identify jackpot winners by comparing each ticket with the winning number
     let jackpotWinners = [];
     entrantList.forEach(({ username, tickets }) => {
       tickets.forEach((ticket) => {
@@ -287,6 +288,8 @@ export async function distributePrizes() {
     entrantList.forEach(({ username, tickets }) => {
       let totalPrize = 0;
       let winningTickets = [];
+      // Preserve the purchased tickets for reference.
+      const purchasedTickets = tickets;
 
       tickets.forEach((ticket) => {
         if (ticket === winningNumber) {
@@ -296,14 +299,14 @@ export async function distributePrizes() {
       });
 
       if (totalPrize > 0) {
-        prizeTransactions.push({ username, amount: totalPrize, winningTickets });
+        prizeTransactions.push({ username, amount: totalPrize, winningTickets, purchasedTickets });
       } else {
-        // Record a "no win" entry to show a message like "Better luck next time"
-        prizeTransactions.push({ username, amount: 0, winningTickets: [] });
+        // Record a "no win" entry to later display a "Better luck next time" message.
+        prizeTransactions.push({ username, amount: 0, winningTickets, purchasedTickets });
       }
     });
 
-    // Send payments and store historical records in the "pastWinners" collection
+    // Send payments and store historical records in the "pastWinners" collection.
     for (const tx of prizeTransactions) {
       await sendSteemPayment(
         tx.username,
@@ -312,12 +315,12 @@ export async function distributePrizes() {
       );
       console.log(`✅ Sent ${tx.amount} STEEM to ${tx.username}`);
 
-      // Store historical record for this winner
       await firestore.collection(PAST_WINNERS_COLLECTION).add({
         username: tx.username,
-        amount: tx.amount,
+        purchasedTickets: tx.purchasedTickets, // store all purchased ticket numbers
         winningTickets: tx.winningTickets,
         winningNumber: winningNumber,
+        amount: tx.amount,
         date: new Date().toISOString().split("T")[0],
         createdAt: new Date().toISOString(),
       });

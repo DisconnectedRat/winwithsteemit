@@ -1,6 +1,10 @@
+export const dynamic = 'force-dynamic';
+
 import { fetchPastWinnerList } from '@/utils/lotteryData';
 
-export async function GET() {
+export async function GET(req) {
+  console.log("GET /api/fetchPastWinnerList called"); // Debug logging
+
   try {
     // Fetch the top 5 past winners from the historical winners collection.
     const pastWinnerList = await fetchPastWinnerList(5);
