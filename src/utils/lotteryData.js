@@ -9,7 +9,7 @@ const PAST_WINNERS_COLLECTION = "pastWinners"; // New collection for historical 
 
 /**
  * 🔹 Fetch confirmed lottery entrants from "purchasedTickets" for yesterday.
- *   Ensures each document has a `tickets` array and that each ticket is a 3-digit string.
+ *   Ensures each document has a tickets array and that each ticket is a 3-digit string.
  */
 export async function fetchConfirmedEntrants() {
   try {
@@ -20,7 +20,7 @@ export async function fetchConfirmedEntrants() {
     // Get yesterday's date by subtracting one day.
     const yesterdayUTC = new Date(todayUTC);
     yesterdayUTC.setUTCDate(todayUTC.getUTCDate() - 1);
-    
+
     // Define start and end of yesterday in UTC.
     const startOfYesterday = new Date(Date.UTC(
       yesterdayUTC.getUTCFullYear(),
@@ -32,23 +32,22 @@ export async function fetchConfirmedEntrants() {
       yesterdayUTC.getUTCMonth(),
       yesterdayUTC.getUTCDate(), 23, 59, 59, 999
     ));
-    
+
     // Convert date boundaries to ISO strings if your timestamp field is stored as a string.
     const startISO = startOfYesterday.toISOString();
     const endISO = endOfYesterday.toISOString();
-    
+
     // Query "purchasedTickets" for documents with a timestamp within yesterday.
-    const snapshot = await firestore.collection('purchasedTickets')
-      .where('timestamp', '>=', startISO)
-      .where('timestamp', '<=', endISO)
+    const snapshot = await firestore.collection("purchasedTickets")
+      .where("timestamp", ">=", startISO)
+      .where("timestamp", "<=", endISO)
       .get();
-    
+
     const entrants = [];
-    snapshot.forEach(doc => {
-      // Optionally, you can normalize tickets here as well (if not already normalized).
+    snapshot.forEach((doc) => {
       entrants.push({ id: doc.id, ...doc.data() });
     });
-    
+
     return entrants;
   } catch (error) {
     console.error("Error fetching confirmed entrants:", error);
@@ -58,7 +57,7 @@ export async function fetchConfirmedEntrants() {
 
 /**
  * 🔹 Fetch past winning numbers
- *   Returns the most recent `days` entries in descending order
+ *   Returns the most recent days entries in descending order
  */
 export async function fetchPastWinners(days = 10) {
   try {
@@ -229,7 +228,7 @@ export async function fetchTotalPrize() {
 
 /**
  * 🔹 Fetch Past Winner List
- *   Returns the most recent `limit` winners from the "pastWinners" collection.
+ *   Returns the most recent limit winners from the "pastWinners" collection.
  */
 export async function fetchPastWinnerList(limit = 5) {
   try {
@@ -271,59 +270,78 @@ export async function distributePrizes() {
       return;
     }
 
-    // Identify jackpot winners by comparing each ticket with the winning number
-    let jackpotWinners = [];
-    entrantList.forEach(({ username, tickets }) => {
-      tickets.forEach((ticket) => {
-        if (ticket === winningNumber) {
-          jackpotWinners.push(username);
-        }
-      });
-    });
+    // We'll calculate prizes for each ticket based on your specified conditions.
+    //   1) 3 Correct Numbers (Jackpot): 50 STEEM
+    //   2) 2 Correct Numbers (Exact Position): 10 STEEM
+    //   3) Super Number in correct position (1st digit): 5 STEEM
+    //   4) Super Number anywhere in the ticket: 1 STEAM
 
-    const jackpotAmount = 50;
-    const jackpotPrizePerWinner = jackpotWinners.length > 0 ? jackpotAmount / jackpotWinners.length : 0;
-
-    // Calculate prize per entrant and record transactions.
-    entrantList.forEach(({ username, tickets }) => {
+    entrantList.forEach(({ username, tickets, timestamp }) => {
       let totalPrize = 0;
       let winningTickets = [];
-      // Preserve the purchased tickets for reference.
-      const purchasedTickets = tickets;
 
       tickets.forEach((ticket) => {
+        const winningDigits = winningNumber.split("");
+        const ticketDigits = ticket.split("");
+        let prize = 0;
+
         if (ticket === winningNumber) {
-          totalPrize += jackpotPrizePerWinner;
+          // Condition #1: All 3 digits match exactly => 50
+          prize = 50;
+        } else if (
+          // Condition #2: Any 2 correct in the exact position => 10
+          (ticketDigits[0] === winningDigits[0] && ticketDigits[1] === winningDigits[1]) ||
+          (ticketDigits[0] === winningDigits[0] && ticketDigits[2] === winningDigits[2]) ||
+          (ticketDigits[1] === winningDigits[1] && ticketDigits[2] === winningDigits[2])
+        ) {
+          prize = 10;
+        } else if (ticketDigits[0] === winningDigits[0]) {
+          // Condition #3: Super number in correct position => 5
+          prize = 5;
+        } else if (ticketDigits.slice(1).includes(winningDigits[0])) {
+          // Condition #4: Super number exists anywhere else => 1
+          prize = 1;
+        }
+
+        if (prize > 0) {
           winningTickets.push(ticket);
+          totalPrize += prize;
         }
       });
 
-      if (totalPrize > 0) {
-        prizeTransactions.push({ username, amount: totalPrize, winningTickets, purchasedTickets });
-      } else {
-        // Record a "no win" entry to later display a "Better luck next time" message.
-        prizeTransactions.push({ username, amount: 0, winningTickets, purchasedTickets });
-      }
+      prizeTransactions.push({
+        username,
+        amount: totalPrize,
+        winningTickets,
+        purchasedTickets: tickets,
+        purchasedAt: timestamp, // use the original ticket purchase time
+      });
     });
 
     // Send payments and store historical records in the "pastWinners" collection.
     for (const tx of prizeTransactions) {
-      await sendSteemPayment(
-        tx.username,
-        tx.amount,
-        `Winning Prize for Tickets: ${tx.winningTickets.join(", ")}`
-      );
-      console.log(`✅ Sent ${tx.amount} STEEM to ${tx.username}`);
+      if (tx.amount > 0) {
+        await sendSteemPayment(
+          tx.username,
+          tx.amount,
+          `Winning Prize for Tickets: ${tx.winningTickets.join(", ")}`
+        );
+        console.log(`✅ Sent ${tx.amount} STEEM to ${tx.username}`);
+      } else {
+        console.log(`🔸 No prize for ${tx.username}`);
+      }
 
+      // Note: We use 'purchasedAt' as the original timestamp from purchasedTickets.
       await firestore.collection(PAST_WINNERS_COLLECTION).add({
         username: tx.username,
-        purchasedTickets: tx.purchasedTickets, // store all purchased ticket numbers
+        purchasedTickets: tx.purchasedTickets,
         winningTickets: tx.winningTickets,
         winningNumber: winningNumber,
         amount: tx.amount,
         date: new Date().toISOString().split("T")[0],
-        createdAt: new Date().toISOString(),
+        purchasedAt: tx.purchasedAt,
       });
+
       console.log(`✅ Recorded prize history for ${tx.username}`);
     }
   } catch (error) {
