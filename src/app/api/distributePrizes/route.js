@@ -1,7 +1,7 @@
 // src/app/api/distributePrizes/route.js
 import { distributePrizes } from '@/utils/lotteryData';
 
-export async function POST(request) {
+export async function POST(req) {
   try {
     await distributePrizes();
     return new Response(JSON.stringify({ success: true }), { status: 200 });

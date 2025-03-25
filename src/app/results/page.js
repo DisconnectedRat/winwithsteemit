@@ -7,8 +7,12 @@ const ResultsPage = () => {
   const [latestWinner, setLatestWinner] = useState(null);
   const [totalPrize, setTotalPrize] = useState(0);
   const [todaysWinners, setTodaysWinners] = useState([]);
-  const [pastResults, setPastResults] = useState([]);
+  const [pastWinningNumbers, setPastWinningNumbers] = useState([]);
+  const [pastWinnerList, setPastWinnerList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  // Pagination state for the Past Winner List
+  const [currentWinnerPage, setCurrentWinnerPage] = useState(1);
+  const winnersPerPage = 10;
 
   const fetchWinningResults = async () => {
     try {
@@ -26,34 +30,58 @@ const ResultsPage = () => {
 
       const winnersResponse = await fetch("/api/fetchYesterdaysWinners");
       const winnersData = await winnersResponse.json();
-      const sorted = winnersData?.yesterdayWinners?.sort((a, b) => b.prize - a.prize) || [];
+      const sorted =
+        winnersData?.yesterdayWinners?.sort((a, b) => b.prize - a.prize) || [];
       setTodaysWinners(sorted);
       console.log("🔥 Winners returned from API:", sorted);
-
-
-      const pastResultsResponse = await fetch("/api/fetchPastWinningNumbers");
-      const pastResultsData = await pastResultsResponse.json();
-      const pastWinningNumbers = pastResultsData?.pastWinningNumbers || [];
-      pastWinningNumbers.sort((a, b) => new Date(b.date) - new Date(a.date));
-      setPastResults(pastWinningNumbers);
     } catch (error) {
       console.error("❌ Error fetching results:", error);
     }
   };
 
+  const fetchPastWinningNumbers = async () => {
+    try {
+      const response = await fetch("/api/fetchPastWinningNumbers");
+      const data = await response.json();
+      const sorted = (data?.pastWinningNumbers || []).sort(
+        (a, b) => new Date(b.date) - new Date(a.date)
+      );
+      setPastWinningNumbers(sorted);
+    } catch (error) {
+      console.error("Error fetching past winning numbers:", error);
+    }
+  };
+
+  const fetchPastWinnerList = async () => {
+    try {
+      const response = await fetch("/api/fetchPastWinnerList");
+      const data = await response.json();
+      setPastWinnerList(data?.pastWinnerList || []);
+    } catch (error) {
+      console.error("Error fetching past winner list:", error);
+    }
+  };
+
   useEffect(() => {
     fetchWinningResults();
+    fetchPastWinningNumbers();
+    fetchPastWinnerList();
   }, []);
 
   useEffect(() => {
     console.log("🔥 Winners from API (UI):", todaysWinners);
   }, [todaysWinners]);
 
-  // 🔍 Filter winners by search term
-  const filteredWinners = todaysWinners; // 🔥 Show all winners (skip search filter for now) 
-
+  // 🔍 Filter winners by search term (skipped for now, showing all winners)
+  const filteredWinners = todaysWinners;
   const top5Winners = filteredWinners.slice(0, 5);
   const otherWinners = filteredWinners.slice(5);
+
+  // Pagination logic for Past Winner List
+  const indexOfLastWinner = currentWinnerPage * winnersPerPage;
+  const indexOfFirstWinner = indexOfLastWinner - winnersPerPage;
+  const currentWinners = pastWinnerList.slice(indexOfFirstWinner, indexOfLastWinner);
+  const totalWinnerPages = Math.ceil(pastWinnerList.length / winnersPerPage);
 
   return (
     <div className="container mx-auto p-6">
@@ -114,7 +142,9 @@ const ResultsPage = () => {
                 className="bg-gradient-to-r from-yellow-100 to-yellow-200 border border-yellow-300 p-4 rounded-xl shadow-md hover:shadow-lg transition"
               >
                 <div className="flex justify-between items-center mb-2">
-                  <span className="font-bold text-xl text-blue-700">@{winner.username}</span>
+                  <span className="font-bold text-xl text-blue-700">
+                    @{winner.username}
+                  </span>
                   <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
                     +{winner.prize} STEEM
                   </span>
@@ -147,8 +177,12 @@ const ResultsPage = () => {
                 className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm hover:shadow-md transition"
               >
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-blue-600 font-semibold">@{winner.username}</span>
-                  <span className="text-green-600 font-medium text-sm">+{winner.prize} STEEM</span>
+                  <span className="text-blue-600 font-semibold">
+                    @{winner.username}
+                  </span>
+                  <span className="text-green-600 font-medium text-sm">
+                    +{winner.prize} STEEM
+                  </span>
                 </div>
                 <p className="text-sm text-gray-600">🎯 Numbers:</p>
                 <div className="flex flex-wrap gap-1 mt-1">
@@ -171,7 +205,69 @@ const ResultsPage = () => {
         </div>
       )}
 
-      {/* 📜 Past Results */}
+      {/* 🏅 Past Winner List with Pagination */}
+      <div className="mt-12">
+        <h2 className="text-2xl font-bold mb-4">🏅 Past Winner List</h2>
+        <table className="w-full border border-gray-300 rounded-lg overflow-hidden shadow-md">
+          <thead>
+            <tr className="bg-gray-700 text-white text-lg">
+              <th className="border px-4 py-2">Username</th>
+              <th className="border px-4 py-2">Ticket Number</th>
+              <th className="border px-4 py-2">Amount Won</th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentWinners && currentWinners.length > 0 ? (
+              currentWinners.map((winner, index) => (
+                <tr
+                  key={index}
+                  className="text-center bg-gray-50 hover:bg-gray-200 transition-all"
+                >
+                  <td className="border px-4 py-2">{winner?.username || "No Username"}</td>
+                  <td className="border px-4 py-2">
+                    {winner?.winningTickets
+                      ? Array.isArray(winner.winningTickets)
+                        ? winner.winningTickets.join(", ")
+                        : winner.winningTickets
+                      : "No Ticket"}
+                  </td>
+                  <td className="border px-4 py-2 font-bold text-green-600">
+                    {winner?.amount || "0"} STEEM
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="3" className="border px-4 py-2 text-center text-gray-500">
+                  No past winner records available.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+        {/* Pagination Controls */}
+        <div className="flex justify-center mt-4">
+          <button
+            onClick={() => setCurrentWinnerPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentWinnerPage === 1}
+            className="mx-2 px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="mx-2">
+            Page {currentWinnerPage} of {totalWinnerPages}
+          </span>
+          <button
+            onClick={() => setCurrentWinnerPage((prev) => Math.min(prev + 1, totalWinnerPages))}
+            disabled={currentWinnerPage === totalWinnerPages}
+            className="mx-2 px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+
+      {/* 📜 Past Winning Numbers */}
       <div className="mt-12">
         <h2 className="text-2xl font-bold mb-4">📜 Past Winning Numbers</h2>
         <table className="w-full border border-gray-300 rounded-lg overflow-hidden shadow-md">
@@ -184,8 +280,8 @@ const ResultsPage = () => {
             </tr>
           </thead>
           <tbody>
-            {Array.isArray(pastResults) && pastResults.length > 0 ? (
-              pastResults.map((result, index) => (
+            {Array.isArray(pastWinningNumbers) && pastWinningNumbers.length > 0 ? (
+              pastWinningNumbers.map((result, index) => (
                 <tr key={index} className="text-center bg-gray-50 hover:bg-gray-200 transition-all">
                   <td className="border px-4 py-2">{result?.date || "N/A"}</td>
                   <td className="border px-4 py-2 font-bold text-blue-600">{result?.number || "000"}</td>
@@ -196,7 +292,7 @@ const ResultsPage = () => {
             ) : (
               <tr>
                 <td colSpan="4" className="border px-4 py-2 text-center text-gray-500">
-                  No past results available.
+                  No past winning numbers available.
                 </td>
               </tr>
             )}
