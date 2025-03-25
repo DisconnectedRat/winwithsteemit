@@ -262,17 +262,17 @@ export async function fetchPastWinnerList(limit = 5) {
 export async function distributePrizes() {
   try {
     const winningNumber = await fetchWinningNumber();
-    const entrants = await fetchConfirmedEntrants();
+    const entrantList = await fetchConfirmedEntrants();
     let prizeTransactions = [];
 
-    if (!winningNumber || entrants.length === 0) {
+    if (!winningNumber || entrantList.length === 0) {
       console.log("🚫 No valid winning number or entrants found.");
       return;
     }
 
     // Identify winners by comparing each ticket with the winning number
     let jackpotWinners = [];
-    entrants.forEach(({ username, tickets }) => {
+    entrantList.forEach(({ username, tickets }) => {
       tickets.forEach((ticket) => {
         if (ticket === winningNumber) {
           jackpotWinners.push(username);
@@ -284,7 +284,7 @@ export async function distributePrizes() {
     const jackpotPrizePerWinner = jackpotWinners.length > 0 ? jackpotAmount / jackpotWinners.length : 0;
 
     // Calculate prize per entrant and record transactions.
-    entrants.forEach(({ username, tickets }) => {
+    entrantList.forEach(({ username, tickets }) => {
       let totalPrize = 0;
       let winningTickets = [];
 

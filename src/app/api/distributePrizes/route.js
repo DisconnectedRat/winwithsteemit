@@ -1,19 +1,21 @@
-// Calculate prize per entrant
-entrants.forEach(({ username, tickets }) => {
-  let totalPrize = 0;
-  let winningTickets = [];
+// Remove "use server"; from here
 
-  tickets.forEach((ticket) => {
-    if (ticket === winningNumber) {
-      totalPrize += jackpotPrizePerWinner;
-      winningTickets.push(ticket);
-    }
-  });
+export const dynamic = 'force-dynamic';
 
-  if (totalPrize > 0) {
-    prizeTransactions.push({ username, amount: totalPrize, winningTickets });
-  } else {
-    // Record a "no win" entry to show a message like "Better luck next time"
-    prizeTransactions.push({ username, amount: 0, winningTickets: [] });
+import { distributePrizes } from "@/utils/lotteryData";
+
+export async function POST(req) {
+  try {
+    await distributePrizes();
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("Error distributing prizes:", error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
-});
+}
