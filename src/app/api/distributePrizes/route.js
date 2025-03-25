@@ -1,12 +1,19 @@
-// src/app/api/distributePrizes/route.js
-import { distributePrizes } from '@/utils/lotteryData';
+// Calculate prize per entrant
+entrants.forEach(({ username, tickets }) => {
+  let totalPrize = 0;
+  let winningTickets = [];
 
-export async function GET (req) {
-  try {
-    await distributePrizes();
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
-  } catch (error) {
-    console.error('Error distributing prizes:', error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+  tickets.forEach((ticket) => {
+    if (ticket === winningNumber) {
+      totalPrize += jackpotPrizePerWinner;
+      winningTickets.push(ticket);
+    }
+  });
+
+  if (totalPrize > 0) {
+    prizeTransactions.push({ username, amount: totalPrize, winningTickets });
+  } else {
+    // Record a "no win" entry to show a message like "Better luck next time"
+    prizeTransactions.push({ username, amount: 0, winningTickets: [] });
   }
-}
+});

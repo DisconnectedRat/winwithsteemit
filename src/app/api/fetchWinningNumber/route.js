@@ -3,6 +3,7 @@ import { fetchWinningNumber, fetchJackpotWinner, fetchTotalPrize, fetchPastWinne
 export async function GET() {
   try {
     const winningNumber = await fetchWinningNumber();
+    console.log("Winning number is:", winningNumber);
     const jackpot = 50; // Placeholder until dynamic jackpot logic is implemented
     const totalPrize = await fetchTotalPrize();
     const latestJackpotWinner = await fetchJackpotWinner();
