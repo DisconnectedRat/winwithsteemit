@@ -27,10 +27,14 @@ export async function fetchConfirmedEntrants() {
       yesterdayUTC.getUTCDate(), 23, 59, 59, 999
     ));
     
+    // Convert date boundaries to ISO strings if your timestamp field is stored as a string.
+    const startISO = startOfYesterday.toISOString();
+    const endISO = endOfYesterday.toISOString();
+    
     // Query "purchasedTickets" for documents with a timestamp within yesterday.
     const snapshot = await firestore.collection('purchasedTickets')
-      .where('timestamp', '>=', startOfYesterday)
-      .where('timestamp', '<=', endOfYesterday)
+      .where('timestamp', '>=', startISO)
+      .where('timestamp', '<=', endISO)
       .get();
     
     const entrants = [];
