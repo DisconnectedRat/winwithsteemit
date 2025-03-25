@@ -1,0 +1,17 @@
+name: Trigger Prize Distribution
+
+# Trigger on a schedule (00:01 UTC daily) and allow manual trigger via workflow_dispatch
+on:
+  schedule:
+    - cron: '1 0 * * *'  # Runs at 00:01 UTC every day
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send authenticated HTTP request to trigger prize distribution
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          curl -H "Authorization: Bearer $API_KEY" -X GET https://winwithsteemit.com/api/distributePrizes
