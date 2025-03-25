@@ -12,4 +12,4 @@ jobs:
     steps:
       - name: Send authenticated HTTP request to trigger prize distribution
         run: |
-          -X POST https://winwithsteemit.com/api/distributePrizes
+          -X GET https://winwithsteemit.com/api/distributePrizes
