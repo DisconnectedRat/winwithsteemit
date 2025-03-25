@@ -223,6 +223,31 @@ export async function fetchTotalPrize() {
 }
 
 /**
+ * 🔹 Fetch Past Winner List
+ *   Returns the most recent `limit` winners from the "pastWinners" collection.
+ */
+export async function fetchPastWinnerList(limit = 5) {
+  try {
+    console.log("Fetching past winners from Firestore...");
+    const snapshot = await firestore
+      .collection(PAST_WINNERS_COLLECTION)
+      .orderBy("createdAt", "desc")
+      .limit(limit)
+      .get();
+
+    const winners = [];
+    snapshot.forEach((doc) => {
+      winners.push(doc.data());
+    });
+
+    return winners;
+  } catch (error) {
+    console.error("Error fetching past winner list:", error);
+    return [];
+  }
+}
+
+/**
  * 🔹 Process winners and distribute prizes
  *   - Fetches confirmed entrants
  *   - Compares each entrant's tickets to the winning number
