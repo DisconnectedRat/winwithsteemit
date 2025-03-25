@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { fetchPastWinnerList } from '@/utils/lotteryData';
 
-export async function GET(req) {
+export async function POST(req) {
   console.log("GET /api/fetchPastWinnerList called"); // Debug logging
 
   try {

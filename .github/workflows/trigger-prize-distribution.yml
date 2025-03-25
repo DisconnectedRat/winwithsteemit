@@ -12,4 +12,4 @@ jobs:
     steps:
       - name: Trigger Prize Distribution (GET request)
         run: |
-          curl -X GET https://winwithsteemit.com/api/distributePrizes
+          curl -X POST https://winwithsteemit.com/api/distributePrizes
