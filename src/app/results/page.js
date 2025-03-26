@@ -7,6 +7,18 @@ const ResultsPage = () => {
   const [latestWinner, setLatestWinner] = useState(null);
   const [totalPrize, setTotalPrize] = useState(0);
 
+  const [todaysWinnerData, setTodaysWinnerData] = useState(null);
+
+const fetchTodaysWinner = async () => {
+    try {
+      const response = await fetch("/api/todaysWinner");
+      const data = await response.json();
+      setTodaysWinnerData(data?.winner || null);
+    } catch (error) {
+      console.error("Error fetching today's winner:", error);
+    }
+  };
+
   // 'todaysWinners' is used to display “today’s/yesterday’s winners” in the "Other Winners" section
   const [todaysWinners, setTodaysWinners] = useState([]);
 
@@ -91,6 +103,7 @@ const ResultsPage = () => {
     fetchWinningResults();
     fetchPastWinningNumbers();
     fetchPastWinnerList();
+    fetchTodaysWinner();
   }, []);
 
   useEffect(() => {
@@ -348,36 +361,26 @@ const ResultsPage = () => {
               <th className="border px-4 py-2">Amount Won</th>
             </tr>
           </thead>
-          <tbody>
-            {Array.isArray(pastWinningNumbers) && pastWinningNumbers.length > 0 ? (
-              pastWinningNumbers.map((result, index) => (
-                <tr
-                  key={index}
-                  className="text-center bg-gray-50 hover:bg-gray-200 transition-all"
-                >
-                  <td className="border px-4 py-2">{result?.date || "N/A"}</td>
-                  <td className="border px-4 py-2 font-bold text-blue-600">
-                    {result?.number || "000"}
-                  </td>
-                  <td className="border px-4 py-2">
-                    {result?.winner || "No Winner"}
-                  </td>
-                  <td className="border px-4 py-2 font-bold text-green-600">
-                    {result?.amount || "0"} STEEM
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan="4"
-                  className="border px-4 py-2 text-center text-gray-500"
-                >
-                  No past winning numbers available.
-                </td>
-              </tr>
-            )}
-          </tbody>
+              <tbody>
+             {todaysWinnerData ? (
+        <tr className="text-center bg-gray-50 hover:bg-gray-200 transition-all">
+          <td className="border px-4 py-2">{todaysWinnerData.date}</td>
+          <td className="border px-4 py-2 font-bold text-blue-600">
+            {todaysWinnerData.winningNumber}
+          </td>
+          <td className="border px-4 py-2">@{todaysWinnerData.winner}</td>
+          <td className="border px-4 py-2 font-bold text-green-600">
+            {todaysWinnerData.amount} STEEM
+          </td>
+        </tr>
+      ) : (
+        <tr>
+          <td colSpan="4" className="border px-4 py-2 text-center text-gray-500">
+            No winning result available for today.
+          </td>
+        </tr>
+      )}
+    </tbody>
         </table>
       </div>
     </div>

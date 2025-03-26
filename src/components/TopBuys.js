@@ -1,14 +1,18 @@
 "use client";
 import { useState, useEffect } from "react";
-import { fetchTopBuyers } from "@/utils/steemAPI";
+import axios from "axios";
 
 const TopBuys = () => {
   const [topBuyers, setTopBuyers] = useState([]);
 
   useEffect(() => {
     async function loadTopBuyers() {
-      const buyers = await fetchTopBuyers();
-      setTopBuyers(buyers);
+      try {
+        const res = await axios.get("/api/fetchTopBuyers");
+        setTopBuyers(res.data.topBuyers || []);
+      } catch (error) {
+        console.error("Failed to load top buyers:", error);
+      }
     }
     loadTopBuyers();
   }, []);

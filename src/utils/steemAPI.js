@@ -20,23 +20,35 @@ export async function fetchSteemTransactions() {
   }
 }
 
-// **🔹 Fetch & Calculate Top Buyers**
+// 🔹 Fetch & Calculate Top Buyers (from Firestore "purchasedTickets")
+import { firestore } from "@/utils/firebaseAdmin";
+
 export async function fetchTopBuyers() {
   try {
-    const { transactions } = await fetchSteemTransactions();
-    const buyerStats = {};
+    const snapshot = await firestore.collection ("purchasedTickets").get();
+    const buyerTotals = {};
 
-    transactions.forEach(({ username, tickets }) => {
-      buyerStats[username] = (buyerStats[username] || 0) + tickets;
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const { username, ticketsBought } = data;
+
+      if (!username || typeof ticketsBought !== "number") return;
+
+      if (buyerTotals[username]) {
+        buyerTotals[username] += ticketsBought;
+      } else {
+        buyerTotals[username] = ticketsBought;
+      }
     });
 
-    // Sort & Return Top 5 Buyers
-    return Object.entries(buyerStats)
-      .sort((a, b) => b[1] - a[1]) // Sort in descending order
-      .slice(0, 5) // Get Top 5
-      .map(([username, tickets]) => ({ username, tickets }));
+    const sorted = Object.entries(buyerTotals)
+      .map(([username, tickets]) => ({ username, tickets }))
+      .sort((a, b) => b.tickets - a.tickets)
+      .slice(0, 5);
+
+    return sorted;
   } catch (error) {
-    console.error("❌ Error fetching top buyers:", error);
+    console.error("❌ Error fetching top buyers from Firestore:", error);
     return [];
   }
 }
