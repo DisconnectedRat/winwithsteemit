@@ -6,43 +6,64 @@ const ResultsPage = () => {
   const [jackpot, setJackpot] = useState(50);
   const [latestWinner, setLatestWinner] = useState(null);
   const [totalPrize, setTotalPrize] = useState(0);
+
+  // 'todaysWinners' is used to display “today’s/yesterday’s winners” in the "Other Winners" section
   const [todaysWinners, setTodaysWinners] = useState([]);
+
+  // Past winning numbers (separate data set)
   const [pastWinningNumbers, setPastWinningNumbers] = useState([]);
+
+  // The main array of "pastWinners" from Firestore
   const [pastWinnerList, setPastWinnerList] = useState([]);
+
+  // For searching, if needed
   const [searchTerm, setSearchTerm] = useState("");
-  // Pagination state for the Past Winner List
+
+  // Pagination for Past Winner List
   const [currentWinnerPage, setCurrentWinnerPage] = useState(1);
   const winnersPerPage = 10;
 
+  // ------------------------
+  //  FETCH FUNCTIONS
+  // ------------------------
+
+  // 1) Overall winning results (number, totalPrize, jackpot, etc.)
   const fetchWinningResults = async () => {
     try {
+      // Fetch winning number
       const response = await fetch("/api/fetchWinningNumber");
       const data = await response.json();
       setWinningNumber(data?.winningNumber || null);
 
+      // Fetch total prize distributed
       const prizeResponse = await fetch("/api/fetchTotalPrize");
       const prizeData = await prizeResponse.json();
       setTotalPrize(prizeData?.totalPrize || 0);
 
+      // Fetch latest jackpot winner
       const jackpotResponse = await fetch("/api/fetchJackpotWinner");
       const jackpotData = await jackpotResponse.json();
       setLatestWinner(jackpotData?.jackpotWinner || null);
 
+      // Fetch “yesterday’s winners”
       const winnersResponse = await fetch("/api/fetchYesterdaysWinners");
       const winnersData = await winnersResponse.json();
       const sorted =
         winnersData?.yesterdayWinners?.sort((a, b) => b.prize - a.prize) || [];
       setTodaysWinners(sorted);
-      console.log("🔥 Winners returned from API:", sorted);
+
+      console.log("🔥 Winners returned from API (Today/Yesterday):", sorted);
     } catch (error) {
       console.error("❌ Error fetching results:", error);
     }
   };
 
+  // 2) Past winning numbers (if you want to show historical winningNumber docs)
   const fetchPastWinningNumbers = async () => {
     try {
       const response = await fetch("/api/fetchPastWinningNumbers");
       const data = await response.json();
+      // Sort by date descending
       const sorted = (data?.pastWinningNumbers || []).sort(
         (a, b) => new Date(b.date) - new Date(a.date)
       );
@@ -52,6 +73,7 @@ const ResultsPage = () => {
     }
   };
 
+  // 3) Full past winners from Firestore
   const fetchPastWinnerList = async () => {
     try {
       const response = await fetch("/api/fetchPastWinnerList");
@@ -62,6 +84,9 @@ const ResultsPage = () => {
     }
   };
 
+  // ------------------------
+  //  USE EFFECTS
+  // ------------------------
   useEffect(() => {
     fetchWinningResults();
     fetchPastWinningNumbers();
@@ -72,17 +97,38 @@ const ResultsPage = () => {
     console.log("🔥 Winners from API (UI):", todaysWinners);
   }, [todaysWinners]);
 
-  // 🔍 Filter winners by search term (skipped for now, showing all winners)
-  const filteredWinners = todaysWinners;
-  const top5Winners = filteredWinners.slice(0, 5);
-  const otherWinners = filteredWinners.slice(5);
+  // ------------------------
+  //  DERIVED VALUES
+  // ------------------------
 
-  // Pagination logic for Past Winner List
+  //
+  // A) Sort 'pastWinnerList' to get Top 5 by 'amount'
+  //
+  const top5PastWinners = [...pastWinnerList]
+    .sort((a, b) => (b.amount || 0) - (a.amount || 0))
+    .slice(0, 5);
+
+  //
+  // B) For today's/yesterday’s winners logic (already in your code):
+  //
+  const filteredWinners = [...todaysWinners].sort((a, b) => b.amount - a.amount);
+  const todaysTop5Winners = filteredWinners.slice(0, 5);
+  const todaysOtherWinners = filteredWinners.slice(5);
+
+  //
+  // C) Pagination for the entire 'pastWinnerList'
+  //
   const indexOfLastWinner = currentWinnerPage * winnersPerPage;
   const indexOfFirstWinner = indexOfLastWinner - winnersPerPage;
-  const currentWinners = pastWinnerList.slice(indexOfFirstWinner, indexOfLastWinner);
+  const currentWinners = pastWinnerList.slice(
+    indexOfFirstWinner,
+    indexOfLastWinner
+  );
   const totalWinnerPages = Math.ceil(pastWinnerList.length / winnersPerPage);
 
+  // ------------------------
+  //  RENDER
+  // ------------------------
   return (
     <div className="container mx-auto p-6">
       <h1 className="text-3xl font-bold text-center">🏆 Latest Lottery Results</h1>
@@ -120,7 +166,7 @@ const ResultsPage = () => {
         </div>
       </div>
 
-      {/* 🔍 Search Bar */}
+      {/* 🔍 Search Bar (if needed) */}
       <div className="mt-10 max-w-md mx-auto">
         <input
           type="text"
@@ -131,12 +177,15 @@ const ResultsPage = () => {
         />
       </div>
 
-      {/* 🎖️ Top 5 Leaderboard */}
-      {top5Winners.length > 0 && (
+      {/* 
+        🎖️ Top 5 Winners (ALL TIME from pastWinnerList) 
+        using 'top5PastWinners'
+      */}
+      {top5PastWinners.length > 0 && (
         <div className="mt-8">
           <h2 className="text-2xl font-bold mb-4">🥇 Top 5 Winners</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {top5Winners.map((winner, index) => (
+            {top5PastWinners.map((winner, index) => (
               <div
                 key={index}
                 className="bg-gradient-to-r from-yellow-100 to-yellow-200 border border-yellow-300 p-4 rounded-xl shadow-md hover:shadow-lg transition"
@@ -146,19 +195,23 @@ const ResultsPage = () => {
                     @{winner.username}
                   </span>
                   <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
-                    +{winner.prize} STEEM
+                    +{winner.amount || 0} STEEM
                   </span>
                 </div>
-                <p className="text-sm text-gray-700 mb-1">Winning Numbers:</p>
+                <p className="text-sm text-gray-700 mb-1">Winning Tickets:</p>
                 <div className="flex flex-wrap gap-2">
-                  {winner.numbers?.map((num, i) => (
-                    <span
-                      key={i}
-                      className="bg-gray-800 text-white px-2 py-1 rounded text-sm"
-                    >
-                      {num}
-                    </span>
-                  ))}
+                  {winner.winningTickets && winner.winningTickets.length > 0 ? (
+                    winner.winningTickets.map((ticket, i) => (
+                      <span
+                        key={i}
+                        className="bg-gray-800 text-white px-2 py-1 rounded text-sm"
+                      >
+                        {ticket}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-gray-500">No Winning Tickets</span>
+                  )}
                 </div>
               </div>
             ))}
@@ -166,12 +219,12 @@ const ResultsPage = () => {
         </div>
       )}
 
-      {/* 🎟️ Other Winners */}
-      {otherWinners.length > 0 ? (
+      {/* 🎟️ Other Winners (from your 'todaysWinners') */}
+      {todaysOtherWinners.length > 0 ? (
         <div className="mt-10">
           <h2 className="text-2xl font-bold mb-4">🎟️ Other Winners</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {otherWinners.map((winner, index) => (
+            {todaysOtherWinners.map((winner, index) => (
               <div
                 key={index}
                 className="bg-white border border-gray-200 p-4 rounded-lg shadow-sm hover:shadow-md transition"
@@ -186,14 +239,18 @@ const ResultsPage = () => {
                 </div>
                 <p className="text-sm text-gray-600">🎯 Numbers:</p>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {winner.numbers?.map((num, i) => (
-                    <span
-                      key={i}
-                      className="bg-gray-200 text-sm text-gray-800 px-2 py-1 rounded"
-                    >
-                      {num}
-                    </span>
-                  ))}
+                  {winner.numbers?.length > 0 ? (
+                    winner.numbers.map((num, i) => (
+                      <span
+                        key={i}
+                        className="bg-gray-200 text-sm text-gray-800 px-2 py-1 rounded"
+                      >
+                        {num}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-red-400">No Winning Tickets</span>
+                  )}
                 </div>
               </div>
             ))}
@@ -207,7 +264,7 @@ const ResultsPage = () => {
 
       {/* 🏅 Past Winner List with Pagination */}
       <div className="mt-12">
-        <h2 className="text-2xl font-bold mb-4">🏅 Past Winner List</h2>
+        <h2 className="text-2xl font-bold mb-4">🏅 Today&apos;s Winner List</h2>
         <table className="w-full border border-gray-300 rounded-lg overflow-hidden shadow-md">
           <thead>
             <tr className="bg-gray-700 text-white text-lg">
@@ -223,22 +280,32 @@ const ResultsPage = () => {
                   key={index}
                   className="text-center bg-gray-50 hover:bg-gray-200 transition-all"
                 >
-                  <td className="border px-4 py-2">{winner?.username || "No Username"}</td>
                   <td className="border px-4 py-2">
-                    {winner?.winningTickets
-                      ? Array.isArray(winner.winningTickets)
-                        ? winner.winningTickets.join(", ")
-                        : winner.winningTickets
+                    {winner?.username || "No Username"}
+                  </td>
+                  <td className="border px-4 py-2">
+                    {Array.isArray(winner?.purchasedTickets) &&
+                    winner.purchasedTickets.length > 0
+                      ? winner.purchasedTickets.join(", ")
                       : "No Ticket"}
                   </td>
-                  <td className="border px-4 py-2 font-bold text-green-600">
-                    {winner?.amount || "0"} STEEM
+                  <td className="border px-4 py-2 font-bold">
+                    {winner?.amount > 0 ? (
+                      <span className="text-green-600">
+                        {winner.amount} STEEM
+                      </span>
+                    ) : (
+                      <span className="text-red-500">Better Luck for Today!</span>
+                    )}
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="3" className="border px-4 py-2 text-center text-gray-500">
+                <td
+                  colSpan="3"
+                  className="border px-4 py-2 text-center text-gray-500"
+                >
                   No past winner records available.
                 </td>
               </tr>
@@ -258,7 +325,9 @@ const ResultsPage = () => {
             Page {currentWinnerPage} of {totalWinnerPages}
           </span>
           <button
-            onClick={() => setCurrentWinnerPage((prev) => Math.min(prev + 1, totalWinnerPages))}
+            onClick={() =>
+              setCurrentWinnerPage((prev) => Math.min(prev + 1, totalWinnerPages))
+            }
             disabled={currentWinnerPage === totalWinnerPages}
             className="mx-2 px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
           >
@@ -282,16 +351,28 @@ const ResultsPage = () => {
           <tbody>
             {Array.isArray(pastWinningNumbers) && pastWinningNumbers.length > 0 ? (
               pastWinningNumbers.map((result, index) => (
-                <tr key={index} className="text-center bg-gray-50 hover:bg-gray-200 transition-all">
+                <tr
+                  key={index}
+                  className="text-center bg-gray-50 hover:bg-gray-200 transition-all"
+                >
                   <td className="border px-4 py-2">{result?.date || "N/A"}</td>
-                  <td className="border px-4 py-2 font-bold text-blue-600">{result?.number || "000"}</td>
-                  <td className="border px-4 py-2">{result?.winner || "No Winner"}</td>
-                  <td className="border px-4 py-2 font-bold text-green-600">{result?.amount || "0"} STEEM</td>
+                  <td className="border px-4 py-2 font-bold text-blue-600">
+                    {result?.number || "000"}
+                  </td>
+                  <td className="border px-4 py-2">
+                    {result?.winner || "No Winner"}
+                  </td>
+                  <td className="border px-4 py-2 font-bold text-green-600">
+                    {result?.amount || "0"} STEEM
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="4" className="border px-4 py-2 text-center text-gray-500">
+                <td
+                  colSpan="4"
+                  className="border px-4 py-2 text-center text-gray-500"
+                >
                   No past winning numbers available.
                 </td>
               </tr>
