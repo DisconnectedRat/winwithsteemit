@@ -6,8 +6,10 @@ const EntrantsList = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // Fetch entrants from /api/tickets
   const fetchEntrants = async () => {
     try {
+      setLoading(true);
       const res = await fetch("/api/tickets");
       const json = await res.json();
       console.log("🎟️ API Response:", json);
@@ -33,12 +35,13 @@ const EntrantsList = () => {
     }
   };
 
+  // Initial load only, no interval
   useEffect(() => {
     fetchEntrants();
-    const interval = setInterval(fetchEntrants, 15000); // 🔄 Refresh every 15 seconds
-    return () => clearInterval(interval);
+    // Removed the setInterval to avoid repeated calls
   }, []);
 
+  // Filter entrants by username search
   const filteredEntrants = entrants.filter((entry) =>
     entry.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -49,6 +52,7 @@ const EntrantsList = () => {
         🎯 Confirmed Participants
       </h2>
 
+      {/* "Search by username" box */}
       <div className="mb-4 flex justify-center">
         <input
           type="text"
@@ -57,6 +61,16 @@ const EntrantsList = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+      </div>
+
+      {/* Manual refresh (Verify Entry) button */}
+      <div className="mb-6 flex justify-center">
+        <button
+          onClick={fetchEntrants}
+          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md shadow"
+        >
+          Verify Entry
+        </button>
       </div>
 
       <div className="overflow-x-auto rounded-lg shadow-lg">
@@ -108,7 +122,7 @@ const EntrantsList = () => {
             ) : (
               <tr>
                 <td colSpan="5" className="px-4 py-6 text-center text-gray-500">
-                  😢 No confirmed entries yet.
+                  No confirmed entries yet..
                 </td>
               </tr>
             )}

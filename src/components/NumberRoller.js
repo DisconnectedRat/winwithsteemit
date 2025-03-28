@@ -5,17 +5,36 @@ import { useTicket } from "@/context/TicketContext";
 const NumberRoller = () => {
   const { setSelectedTickets, selectedTickets, setMemo } = useTicket();
 
+  // Number selection state
   const [selectedNumbers, setSelectedNumbers] = useState([0, 0, 0]);
+
+  // If user confirms purchase, we display instructions
   const [isConfirmed, setIsConfirmed] = useState(false);
+
+  // Copy feedback states
   const [copyMemoText, setCopyMemoText] = useState("Copy Memo");
   const [copyAccountText, setCopyAccountText] = useState("Copy Account");
+
+  // Memo data
   const [memoGenerated, setMemoGenerated] = useState("");
+
+  // Username & submission feedback
   const [username, setUsername] = useState("");
   const [submitMessage, setSubmitMessage] = useState("");
-  const [isSubmitted, setIsSubmitted] = useState(false); // ✅ prevent multiple submissions
+  const [isSubmitted, setIsSubmitted] = useState(false); // prevent multiple submissions
+
+  // Promo Code Feature
+  const [showPromoCodeInput, setShowPromoCodeInput] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+
+  // ▓▓ Ticket selection feedback
+  const [ticketMessage, setTicketMessage] = useState("");
 
   const lotteryAccount = "winwithsteemit";
 
+  // ---------------------
+  //  NUMBER ROLLER LOGIC
+  // ---------------------
   const handleNumberChange = (index, direction) => {
     setSelectedNumbers((prev) => {
       const newNumbers = [...prev];
@@ -28,13 +47,28 @@ const NumberRoller = () => {
     });
   };
 
+  // ---------------------
+  //  SELECT / TICKET LOGIC
+  // ---------------------
   const confirmSelection = () => {
     const newTicket = selectedNumbers.join("");
-    if (!selectedTickets.includes(newTicket) && selectedTickets.length < 100) {
+
+    // Check for duplicates
+    if (selectedTickets.includes(newTicket)) {
+      setTicketMessage("❌ You have already selected this ticket number!");
+    } else if (selectedTickets.length >= 25) {
+      setTicketMessage(
+        "❌ You already have the maximum of 25 tickets."
+      );
+    } else {
       setSelectedTickets([...selectedTickets, newTicket]);
+      setTicketMessage(""); // clear any old messages
     }
   };
 
+  // ---------------------
+  //  CONFIRM & PURCHASE
+  // ---------------------
   const handleConfirmPurchase = () => {
     if (selectedTickets.length === 0) return;
 
@@ -49,6 +83,9 @@ const NumberRoller = () => {
     setIsConfirmed(true);
   };
 
+  // ---------------------
+  //  FINAL SUBMIT
+  // ---------------------
   const handleFinalSubmit = async () => {
     const cleanUsername = username.replace(/^@/, "").toLowerCase().trim();
 
@@ -69,14 +106,15 @@ const NumberRoller = () => {
         body: JSON.stringify({
           username: cleanUsername,
           tickets: selectedTickets,
-          memo: memoGenerated,
+          memo: promoCode ? promoCode : memoGenerated, // Use promoCode if present
+          promoCode: promoCode,
           timestamp: new Date().toISOString(),
         }),
       });
 
       const result = await response.json();
       if (result.success) {
-        setSubmitMessage("success"); // Set flag instead of message
+        setSubmitMessage("success");
         setIsSubmitted(true);
       } else {
         setSubmitMessage("❌ Failed to store your entry. Please try again.");
@@ -87,12 +125,18 @@ const NumberRoller = () => {
     }
   };
 
+  // ---------------------
+  //  CLIPBOARD HELPER
+  // ---------------------
   const copyToClipboard = (text, setButtonText) => {
     navigator.clipboard.writeText(text).then(() => {
       setButtonText("Copied! ✅");
       setTimeout(() => setButtonText("Copy"), 2000);
     });
   };
+
+  // If user enters promoCode, we display that in place of memo
+  const finalMemoToDisplay = promoCode || memoGenerated;
 
   return (
     <div className="flex flex-col items-center">
@@ -110,7 +154,11 @@ const NumberRoller = () => {
             </button>
             <div className="flex flex-col items-center w-16 h-24">
               <span className="text-gray-400 text-lg">{(num + 9) % 10}</span>
-              <span className={`font-bold ${index === 0 ? "text-red-500 text-4xl" : "text-black text-4xl"}`}>
+              <span
+                className={`font-bold ${
+                  index === 0 ? "text-red-500 text-4xl" : "text-black text-4xl"
+                }`}
+              >
                 {num}
               </span>
               <span className="text-gray-400 text-lg">{(num + 1) % 10}</span>
@@ -133,6 +181,11 @@ const NumberRoller = () => {
         SELECT
       </button>
 
+      {/* Show Ticket Message if any */}
+      {ticketMessage && (
+        <p className="mt-2 text-red-500 font-semibold">{ticketMessage}</p>
+      )}
+
       {/* Display Selected Tickets */}
       <p className="mt-4 font-bold">🎟️ Selected Ticket Numbers:</p>
       <div className="grid grid-cols-5 gap-2 mt-2">
@@ -146,12 +199,12 @@ const NumberRoller = () => {
       {/* Confirm & Purchase Button */}
       <button
         className={`mt-4 px-4 py-2 rounded-lg ${
-          selectedTickets.length > 0
+          selectedTickets.length > 0 && !isSubmitted
             ? "bg-blue-500 hover:bg-blue-600 text-white"
             : "bg-gray-400 text-gray-700 cursor-not-allowed"
         }`}
         onClick={handleConfirmPurchase}
-        disabled={selectedTickets.length === 0}
+        disabled={selectedTickets.length === 0 || isSubmitted}
       >
         Confirm & Purchase
       </button>
@@ -161,8 +214,8 @@ const NumberRoller = () => {
         <div className="mt-4 p-4 bg-gray-100 border border-gray-300 rounded-lg shadow-md w-full max-w-lg">
           <h3 className="text-lg font-bold text-gray-700 mb-2">💰 Payment Instructions:</h3>
           <p className="text-gray-600">
-            Send <strong>{selectedTickets.length} STEEM</strong> to the <strong>{lotteryAccount}</strong> account via your wallet.
-            Be sure to copy and paste your <strong>memo</strong> in the transfer.
+            Send <strong>{selectedTickets.length} STEEM</strong> to the <strong>{lotteryAccount}</strong>{" "}
+            account via your wallet. Be sure to copy and paste your <strong>memo</strong> in the transfer.
           </p>
 
           {/* STEEM Account */}
@@ -181,18 +234,41 @@ const NumberRoller = () => {
             </button>
           </div>
 
-          {/* Memo */}
+          {/* Promo Code Toggle */}
+          {!showPromoCodeInput ? (
+            <button
+              className="mt-4 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded transition"
+              onClick={() => setShowPromoCodeInput(true)}
+              disabled={isSubmitted}
+            >
+              Enter Promo Code
+            </button>
+          ) : (
+            <div className="mt-4">
+              <label className="block text-gray-600 mb-1">Promo Code (optional):</label>
+              <input
+                type="text"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                placeholder="e.g. STEEM-12345"
+                className="border px-3 py-2 rounded-md w-full text-gray-700"
+                disabled={isSubmitted}
+              />
+            </div>
+          )}
+
+          {/* Memo (or Promo Code) */}
           <div className="mt-4">
             <p className="text-gray-600">Memo:</p>
             <div className="flex items-center">
               <input
                 type="text"
-                value={memoGenerated}
+                value={promoCode || memoGenerated}
                 readOnly
                 className="border px-3 py-2 rounded-md w-full text-gray-700"
               />
               <button
-                onClick={() => copyToClipboard(memoGenerated, setCopyMemoText)}
+                onClick={() => copyToClipboard(promoCode || memoGenerated, setCopyMemoText)}
                 className="ml-2 px-3 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition"
               >
                 {copyMemoText}
@@ -230,7 +306,8 @@ const NumberRoller = () => {
           {submitMessage === "success" ? (
             <div className="mt-4 text-center">
               <p className="text-green-700 font-semibold mb-2">
-                 Thank you @{username.trim().replace(/^@/, "")}, your entry is recorded! Kindly follow the Payment Instructions to complete the payment through your wallet.
+                Thank you @{username.trim().replace(/^@/, "")}, your entry is recorded!
+                Kindly follow the Payment Instructions to complete the payment through your wallet.
               </p>
               <a
                 href="https://winwithsteemit.com/entrants"

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { firestore } from "@/utils/firebaseAdmin";
 
-const STEEM_API_URL = "https://api.steemit.com";
+const STEEMWORLD_ENDPOINT = "https://sds.steemworld.org/transfers_api/getTransfersByTypeTo/transfer/winwithsteemit";
 
 export async function POST(req) {
   try {
@@ -12,9 +12,9 @@ export async function POST(req) {
     }
 
     const cleanUsername = username.toLowerCase().replace(/^@/, "");
-    console.log("🔍 Verifying payment for:", cleanUsername);
+    console.log("🔍 Verifying payment via SteemWorld SDS for:", cleanUsername);
 
-    // 🔹 Fetch Firestore memo for this user
+    // 1) Fetch Firestore doc for user's expected memo
     const ticketSnapshot = await firestore
       .collection("purchasedTickets")
       .where("username", "==", cleanUsername)
@@ -28,45 +28,46 @@ export async function POST(req) {
     }
 
     const userEntry = ticketSnapshot.docs[0];
-    const expectedMemo = userEntry.data().memo;
+    const expectedMemo = userEntry.data().memo || "";
     console.log("🎯 Expected memo:", expectedMemo);
 
-    // 🔹 Fetch last 20 transactions of winwithsteemit
-    const response = await fetch(STEEM_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: 1,
-        jsonrpc: "2.0",
-        method: "condenser_api.get_account_history",
-        params: ["winwithsteemit", -1, 3], // limited to 20 max
-      }),
-    });
+    // 2) Fetch the last 10 transfers from SDS
+    // We'll use '?offset=0&limit=10&order=desc...' to limit results
+    const limit = 10; // or 20 if you prefer
+    const url = `${STEEMWORLD_ENDPOINT}?offset=0&limit=${limit}&order=desc&group_by=false&group_by_invert=false`;
 
-    const steemResponse = await response.json();
+    console.log("🔄 [Server] Checking last", limit, "transfers from SteemWorld for memo match...");
 
-    // ✅ DEBUG LOGGING
-    console.log("📦 Raw STEEM API response:", JSON.stringify(steemResponse, null, 2));
-
-    const history = steemResponse.result;
-
-    if (!Array.isArray(history)) {
-      console.error("❌ Invalid STEEM history format:", history);
-      return NextResponse.json({ success: false, error: "Invalid STEEM response." });
+    const response = await fetch(url, { method: "GET" });
+    if (!response.ok) {
+      console.error("❌ Failed to fetch from SteemWorld SDS:", response.status, response.statusText);
+      return NextResponse.json({ success: false, error: "SteemWorld SDS request failed" }, { status: 500 });
     }
 
-    console.log("🔍 Searching for matching memo in", history.length, "transactions");
+    const data = await response.json();
+    if (!data || !data.result || !Array.isArray(data.result)) {
+      console.warn("⚠️ No valid 'result' array from SteemWorld response:", data);
+      return NextResponse.json({ success: false, error: "Invalid SteemWorld response" }, { status: 500 });
+    }
 
-    const match = history.find(([, tx]) => {
+    const transfers = data.result; // Example shape: [ { from, to, amount, memo, ... }, ... ]
+
+    // 3) Look for a matching transaction
+    const match = transfers.find((tx) => {
+      // Adjust property names if needed
+      const fromUser = (tx.from || "").toLowerCase();
+      const toUser = (tx.to || "").toLowerCase();
+      const memo = (tx.memo || "").trim();
+
       return (
-        tx.op[0] === "transfer" &&
-        tx.op[1].from === cleanUsername &&
-        tx.op[1].to === "winwithsteemit" &&
-        tx.op[1].memo === expectedMemo
+        fromUser === cleanUsername &&
+        toUser === "winwithsteemit" && 
+        memo === expectedMemo
       );
     });
 
     if (match) {
+      // 4) Mark user’s Firestore doc as valid
       await userEntry.ref.update({ isValid: true });
       console.log("✅ Payment matched and user marked as valid");
       return NextResponse.json({ success: true });
