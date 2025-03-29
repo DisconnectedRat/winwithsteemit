@@ -69,7 +69,7 @@ const EntrantsList = () => {
           onClick={fetchEntrants}
           className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md shadow"
         >
-          Verify Entry
+          Refresh the List
         </button>
       </div>
 

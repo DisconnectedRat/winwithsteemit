@@ -309,6 +309,16 @@ export async function fetchPastWinnerList() {
  */
 export async function distributePrizes() {
   try {
+    const today = new Date().toISOString().split("T")[0];
+    const logRef = firestore.collection("prizeLog").doc(today);
+    const logSnap = await logRef.get();
+
+    // 🛑 Skip if already distributed
+    if (logSnap.exists) {
+      console.log(`🚫 Prize distribution already ran for ${today}. Skipping...`);
+      return;
+    }
+    
     const winningNumber = await fetchWinningNumber();
     const entrantList = await fetchConfirmedEntrants();
 

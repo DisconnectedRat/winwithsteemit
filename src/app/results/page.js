@@ -71,19 +71,23 @@ const fetchTodaysWinner = async () => {
   };
 
   // 2) Past winning numbers (if you want to show historical winningNumber docs)
-  const fetchPastWinningNumbers = async () => {
+
+  const fetchTopWinnersLast10Days = async () => {
     try {
-      const response = await fetch("/api/fetchPastWinningNumbers");
+      const response = await fetch("/api/topWinnersLast10Days");
       const data = await response.json();
-      // Sort by date descending
-      const sorted = (data?.pastWinningNumbers || []).sort(
+  
+      const sorted = (data?.topWinners || []).sort(
         (a, b) => new Date(b.date) - new Date(a.date)
       );
+  
       setPastWinningNumbers(sorted);
     } catch (error) {
-      console.error("Error fetching past winning numbers:", error);
+      console.error("Error fetching top winners:", error);
     }
   };
+  
+  
 
   // 3) Full past winners from Firestore
   const fetchPastWinnerList = async () => {
@@ -101,7 +105,7 @@ const fetchTodaysWinner = async () => {
   // ------------------------
   useEffect(() => {
     fetchWinningResults();
-    fetchPastWinningNumbers();
+    fetchTopWinnersLast10Days(); 
     fetchPastWinnerList();
     fetchTodaysWinner();
   }, []);

@@ -1,15 +1,35 @@
 name: Trigger Prize Distribution
 
-# Trigger on a schedule (00:01 UTC daily) and allow manual trigger via workflow_dispatch.
 on:
   schedule:
-    - cron: '1 0 * * *'  # Runs at 00:01 UTC daily
+    - cron: '3 0 * * *'  # Runs at 00:03 UTC daily
   workflow_dispatch:
 
 jobs:
-  trigger:
+  check-and-distribute:
+    runs-on: ubuntu-latest
+    outputs:
+      should_continue: ${{ steps.check.outputs.should_continue }}
+
+    steps:
+      - name: 🧠 Check if already triggered manually
+        id: check
+        run: |
+          TODAY=$(date -u +"%Y-%m-%d")
+          echo "🗓️ Checking if $TODAY already triggered manually..."
+          
+          RESPONSE=$(curl -s "https://yourdomain.com/api/triggerPrizeStatus?date=$TODAY")
+
+          SHOULD_CONTINUE=$(echo "$RESPONSE" | jq -r '.shouldTrigger')
+          echo "should_continue=$SHOULD_CONTINUE" >> $GITHUB_OUTPUT
+
+  distribute:
+    needs: check-and-distribute
+    if: needs.check-and-distribute.outputs.should_continue == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Prize Distribution (GET request)
+      - name: 🚀 Trigger Prize Distribution
         run: |
-          curl -X POST https://winwithsteemit.com/api/distributePrizes
+          curl -X POST https://yourdomain.com/api/triggerPrize \
+               -H "Content-Type: application/json" \
+               -d '{ "runBy": "cron" }'
