@@ -3,6 +3,10 @@ import { firestore } from "@/utils/firebaseAdmin";
 
 const STEEMWORLD_ENDPOINT = "https://sds.steemworld.org/transfers_api/getTransfersByTypeTo/transfer/winwithsteemit";
 
+export async function GET() {
+  return NextResponse.json({ message: "This endpoint expects a POST with { username }." });
+}
+
 export async function POST(req) {
   try {
     const { username } = await req.json();
@@ -24,7 +28,7 @@ export async function POST(req) {
 
     if (ticketSnapshot.empty) {
       console.warn("❌ No ticket found in Firestore for", cleanUsername);
-      return NextResponse.json({ success: false, error: "No ticket found for this user." });
+      return NextResponse.json({ success: false, error: "No ticket found for this user. Please Submit Entry & Retry again." });
     }
 
     const userEntry = ticketSnapshot.docs[0];
@@ -44,14 +48,28 @@ export async function POST(req) {
       return NextResponse.json({ success: false, error: "SteemWorld SDS request failed" }, { status: 500 });
     }
 
+    // The actual shape is:
+    // { code: 0, result: { cols: {...}, rows: [...] } }
     const data = await response.json();
-    if (!data || !data.result || !Array.isArray(data.result)) {
-      console.warn("⚠️ No valid 'result' array from SteemWorld response:", data);
-      return NextResponse.json({ success: false, error: "Invalid SteemWorld response" }, { status: 500 });
+    if (!data || !data.result || !data.result.rows) {
+      console.warn("⚠️ Invalid response shape from SteemWorld:", data);
+      return NextResponse.json(
+        { success: false, error: "Invalid SteemWorld response" },
+        { status: 500 }
+      );
     }
 
-    const transfers = data.result; // Example shape: [ { from, to, amount, memo, ... }, ... ]
-
+    // 3) Convert rows => array of { time, from, to, amount, memo }
+    const { cols, rows } = data.result;
+    const transfers = rows.map((row) => ({
+      time: row[cols.time],
+      from: row[cols.from],
+      to: row[cols.to],
+      amount: row[cols.amount],
+      unit: row[cols.unit],
+      memo: (row[cols.memo] || "").trim(),
+    }));
+    
     // 3) Look for a matching transaction
     const match = transfers.find((tx) => {
       // Adjust property names if needed

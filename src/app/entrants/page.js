@@ -15,11 +15,11 @@ export default function EntrantsPage() {
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen flex flex-col items-center">
+    <div className="bg-gray-800 min-h-screen flex flex-col items-center">
       <div className="max-w-3xl w-full mx-auto bg-white p-6 mt-6 rounded-lg shadow-lg">
         {/* 🔹 Username Verification UI */}
         <div className="mb-6">
-          <div className="p-4 bg-gray-50 rounded-lg shadow">
+          <div className="p-4 bg-gray-800 rounded-lg shadow">
             <VerifyUser onUserVerified={handleUserVerified} />
           </div>
         </div>

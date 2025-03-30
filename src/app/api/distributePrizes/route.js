@@ -1,10 +1,14 @@
-// Remove "use server"; from here
+import { distributePrizes } from "@/utils/lotteryData";
 
 export const dynamic = 'force-dynamic';
 
-import { distributePrizes } from "@/utils/lotteryData";
+// GET method — for browser use
+export async function GET() {
+  return await runDistribute();
+}
 
-export async function POST(req) {
+// Shared handler
+async function runDistribute() {
   try {
     await distributePrizes();
     return new Response(JSON.stringify({ success: true }), {

@@ -140,7 +140,7 @@ const NumberRoller = () => {
 
   return (
     <div className="flex flex-col items-center">
-      <h2 className="text-lg font-semibold mb-5">Pick Your Numbers</h2>
+      <h2 className="text-lg font-semibold mb-5 text-gray-800">Pick Your Numbers</h2>
 
       {/* Number Roller */}
       <div className="flex space-x-6">
@@ -187,7 +187,7 @@ const NumberRoller = () => {
       )}
 
       {/* Display Selected Tickets */}
-      <p className="mt-4 font-bold">🎟️ Selected Ticket Numbers:</p>
+      <p className="mt-4 font-bold text-gray-800">🎟️ Selected Ticket Numbers:</p>
       <div className="grid grid-cols-5 gap-2 mt-2">
         {selectedTickets.map((ticket, index) => (
           <span key={index} className="bg-gray-800 text-white px-2 py-1 rounded">

@@ -60,13 +60,13 @@ const VerifyUser = ({ onUserVerified = () => {} }) => {
 
   return (
     <div className="text-center">
-      <h2 className="text-xl font-bold mb-2">🔍 Verify Your Lottery Entry</h2>
+      <h2 className="text-xl font-bold mb-2 text-white">🔍 Verify Your Lottery Entry</h2>
       <input
         type="text"
         value={localUsername}
         onChange={(e) => setLocalUsername(e.target.value)}
-        placeholder="@yourusername"
-        className="border px-3 py-2 rounded-md w-72 text-center mb-2"
+        placeholder="Enter your username"
+        className="border px-3 py-2 rounded-md w-72 text-center mb-2 text-gray-200"
         disabled={loading}
       />
       <br />

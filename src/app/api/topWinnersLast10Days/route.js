@@ -1,5 +1,7 @@
 import { firestore } from "@/utils/firebaseAdmin";
 
+console.log("🔥 topWinnersLast10Days API called");
+
 export async function GET() {
   try {
     const snapshot = await firestore

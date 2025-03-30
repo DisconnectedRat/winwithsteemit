@@ -168,11 +168,11 @@ const fetchTodaysWinner = async () => {
       {/* Prize & Jackpot */}
       <div className="mt-6 flex flex-col sm:flex-row justify-center gap-10">
         <div className="p-4 bg-gray-100 rounded-lg shadow-md text-center">
-          <p className="text-lg font-semibold">Total Prize Distributed</p>
+          <p className="text-lg font-semibold text-black">Total Prize Distributed</p>
           <p className="text-xl font-bold text-blue-500">{totalPrize} STEEM</p>
         </div>
         <div className="p-4 bg-gray-100 rounded-lg shadow-md text-center">
-          <p className="text-lg font-semibold">Latest Jackpot Winner</p>
+          <p className="text-lg font-semibold text-black">Latest Jackpot Winner</p>
           {latestWinner ? (
             <p className="text-xl font-bold text-blue-500">
               {latestWinner.username} - {latestWinner.amount} STEEM
@@ -297,10 +297,10 @@ const fetchTodaysWinner = async () => {
                   key={index}
                   className="text-center bg-gray-50 hover:bg-gray-200 transition-all"
                 >
-                  <td className="border px-4 py-2">
+                  <td className="border px-4 py-2 text-gray-800">
                     {winner?.username || "No Username"}
                   </td>
-                  <td className="border px-4 py-2">
+                  <td className="border px-4 py-2 text-gray-800">
                     {Array.isArray(winner?.purchasedTickets) &&
                     winner.purchasedTickets.length > 0
                       ? winner.purchasedTickets.join(", ")
@@ -360,31 +360,36 @@ const fetchTodaysWinner = async () => {
           <thead>
             <tr className="bg-gray-700 text-white text-lg">
               <th className="border px-4 py-2">Date</th>
-              <th className="border px-4 py-2">Winning #</th>
-              <th className="border px-4 py-2">Winner</th>
+              <th className="border px-4 py-2">Winning Number</th>
+              <th className="border px-4 py-2">Winner of the Day</th>
               <th className="border px-4 py-2">Amount Won</th>
             </tr>
           </thead>
-              <tbody>
-             {todaysWinnerData ? (
-        <tr className="text-center bg-gray-50 hover:bg-gray-200 transition-all">
-          <td className="border px-4 py-2">{todaysWinnerData.date}</td>
-          <td className="border px-4 py-2 font-bold text-blue-600">
-            {todaysWinnerData.winningNumber}
-          </td>
-          <td className="border px-4 py-2">@{todaysWinnerData.winner}</td>
-          <td className="border px-4 py-2 font-bold text-green-600">
-            {todaysWinnerData.amount} STEEM
-          </td>
-        </tr>
-      ) : (
-        <tr>
-          <td colSpan="4" className="border px-4 py-2 text-center text-gray-500">
-            No winning result available for today.
-          </td>
-        </tr>
-      )}
-    </tbody>
+          <tbody>
+            {Array.isArray(pastWinningNumbers) && pastWinningNumbers.length > 0 ? (
+              pastWinningNumbers.map((entry, index) => (
+                <tr
+                  key={index}
+                  className="text-center bg-gray-50 hover:bg-gray-200 transition-all"
+                >
+                  <td className="border px-4 py-2 text-gray-800">{entry.date}</td>
+                  <td className="border px-4 py-2 font-bold text-blue-600">
+                    {entry.winningNumber}
+                  </td>
+                  <td className="border px-4 py-2 text-gray-800">@{entry.winner}</td>
+                  <td className="border px-4 py-2 font-bold text-green-600">
+                    {entry.amount} STEEM
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" className="border px-4 py-2 text-center text-gray-500">
+                  No winning results available.
+                </td>
+              </tr>
+            )}
+          </tbody>
         </table>
       </div>
     </div>
