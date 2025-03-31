@@ -58,7 +58,7 @@ const ResultsPage = () => {
       );
       newJackpot = 50; // Reset Jackpot if won
     } else if (newJackpot < 100) {
-      newJackpot = Math.min(newJackpot * 1.1, 100); // Increase by 10% daily
+      newJackpot = Math.min(newJackpot + 5, 100); // Increase by 5 STEEM daily
     }
     
     setJackpot(newJackpot);

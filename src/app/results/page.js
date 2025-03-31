@@ -6,7 +6,6 @@ const ResultsPage = () => {
   const [jackpot, setJackpot] = useState(50);
   const [latestWinner, setLatestWinner] = useState(null);
   const [totalPrize, setTotalPrize] = useState(0);
-
   const [todaysWinnerData, setTodaysWinnerData] = useState(null);
 
 const fetchTodaysWinner = async () => {
@@ -65,6 +64,10 @@ const fetchTodaysWinner = async () => {
       setTodaysWinners(sorted);
 
       console.log("🔥 Winners returned from API (Today/Yesterday):", sorted);
+      // ✅ Fetch current jackpot from Firestore config
+      const configRes = await fetch("/api/fetchDailyConfig");
+      const configData = await configRes.json();
+      if (configData?.jackpot !== undefined) setJackpot(configData.jackpot);
     } catch (error) {
       console.error("❌ Error fetching results:", error);
     }
@@ -171,6 +174,10 @@ const fetchTodaysWinner = async () => {
           <p className="text-lg font-semibold text-black">Total Prize Distributed</p>
           <p className="text-xl font-bold text-blue-500">{totalPrize} STEEM</p>
         </div>
+        <div className="p-4 bg-yellow-100 rounded-lg shadow-md text-center w-72">
+          <p className="text-lg font-semibold text-yellow-900">🎯 Current Jackpot</p>
+          <p className="text-2xl font-extrabold text-red-600">{jackpot} STEEM</p>
+         </div>
         <div className="p-4 bg-gray-100 rounded-lg shadow-md text-center">
           <p className="text-lg font-semibold text-black">Latest Jackpot Winner</p>
           {latestWinner ? (

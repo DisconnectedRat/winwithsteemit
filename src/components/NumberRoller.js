@@ -88,30 +88,47 @@ const NumberRoller = () => {
   // ---------------------
   const handleFinalSubmit = async () => {
     const cleanUsername = username.replace(/^@/, "").toLowerCase().trim();
-
+  
     if (!cleanUsername) {
       setSubmitMessage("❌ Please enter a valid Steemit username.");
       return;
     }
-
+  
     if (isSubmitted) {
       setSubmitMessage("✅ Your entry has already been submitted.");
       return;
     }
-
+  
     try {
+      // 🔍 If promoCode is entered, validate it against Firestore
+      if (promoCode) {
+        const res = await fetch("/api/validatePromo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: cleanUsername, promoCode }),
+        });
+        const promoResult = await res.json();
+  
+        if (!promoResult.valid) {
+          setSubmitMessage("❌ Invalid promo code for this username.");
+          return;
+        }
+      }
+  
+      // ✅ If promo code is valid or not used, proceed to store ticket
       const response = await fetch("/api/storeTicket", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: cleanUsername,
           tickets: selectedTickets,
-          memo: promoCode ? promoCode : memoGenerated, // Use promoCode if present
-          promoCode: promoCode,
+          memo: promoCode ? promoCode : memoGenerated,
+          promoCode: promoCode || null,
+          isValid: promoCode ? true : false,  // ✅ PromoCode entries = valid
           timestamp: new Date().toISOString(),
         }),
       });
-
+  
       const result = await response.json();
       if (result.success) {
         setSubmitMessage("success");
@@ -123,7 +140,7 @@ const NumberRoller = () => {
       console.error("❌ Error submitting ticket:", error);
       setSubmitMessage("⚠️ Error submitting your entry. Try again later.");
     }
-  };
+  };  
 
   // ---------------------
   //  CLIPBOARD HELPER
@@ -306,8 +323,10 @@ const NumberRoller = () => {
           {submitMessage === "success" ? (
             <div className="mt-4 text-center">
               <p className="text-green-700 font-semibold mb-2">
-                Thank you @{username.trim().replace(/^@/, "")}, your entry is recorded!
-                Kindly follow the Payment Instructions to complete the payment through your wallet.
+                Thank you @{username.trim().replace(/^@/, "")}, your entry is recorded!{" "}
+                {promoCode
+                  ? "🎉 You used a promo code. Good luck in tomorrow’s draw!"
+                  : "Kindly follow the Payment Instructions to complete the payment through your wallet."}
               </p>
               <a
                 href="https://winwithsteemit.com/entrants"

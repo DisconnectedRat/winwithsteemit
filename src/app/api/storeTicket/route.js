@@ -2,7 +2,7 @@ import { firestore } from "@/utils/firebaseAdmin";
 
 export async function POST(req) {
   try {
-    const { username, tickets, memo, timestamp } = await req.json();
+    const { username, tickets, memo, timestamp, promoCode } = await req.json();
 
     // ✅ Validate input
     if (!username || !tickets || tickets.length === 0 || !memo) {
@@ -15,11 +15,60 @@ export async function POST(req) {
       );
     }
 
-    // ✅ Prepare data
     const ticketNumbers = tickets.join(", ");
     const ticketsBought = tickets.length;
+    let isValid = false;
 
-    // ✅ Store data in Firestore with isValid: false
+    // ✅ Promo Code Flow
+    if (promoCode) {
+      // Step 1: Validate against promoCode collection
+      const promoSnap = await firestore
+        .collection("promoCode")
+        .where("username", "==", username)
+        .where("memo", "==", promoCode)
+        .limit(1)
+        .get();
+
+      if (promoSnap.empty) {
+        return new Response(
+          JSON.stringify({ success: false, error: "Promo Code Invalid" }),
+          { status: 403, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      // Step 2: Enforce 1 ticket rule
+      if (tickets.length !== 1) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Promo code is valid for 1 free ticket only.",
+          }),
+          { status: 403, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      // Step 3: Check for duplicate use
+      const existingPromoTicket = await firestore
+        .collection("purchasedTickets")
+        .where("username", "==", username)
+        .where("memo", "==", promoCode)
+        .limit(1)
+        .get();
+
+      if (!existingPromoTicket.empty) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Promo code already used by this user.",
+          }),
+          { status: 403, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      isValid = true; // ✅ Accept as free + valid
+    }
+
+    // ✅ Store in Firestore
     const docRef = await firestore.collection("purchasedTickets").add({
       username,
       tickets,
@@ -27,10 +76,28 @@ export async function POST(req) {
       ticketsBought,
       memo,
       timestamp,
-      isValid: false, // 🚨 Ensures ticket will be verified later
+      isValid,
     });
 
-    // ✅ Return success response
+    // ✅ Update or create Top Buy Accumulator
+      const statRef = firestore.collection("topBuyerStats").doc(username);
+        await firestore.runTransaction(async (tx) => {
+          const snap = await tx.get(statRef);
+        if (!snap.exists) {
+            tx.set(statRef, {
+            username,
+            totalTickets: ticketsBought,
+            lastUpdated: timestamp,
+          });
+        } else {
+      const current = snap.data().totalTickets || 0;
+          tx.update(statRef, {
+            totalTickets: current + ticketsBought,
+            lastUpdated: timestamp,
+          });
+        }
+      });
+
     return new Response(
       JSON.stringify({ success: true, docId: docRef.id }),
       {

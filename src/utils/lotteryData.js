@@ -321,9 +321,10 @@ export async function distributePrizes() {
     
     const winningNumber = await fetchWinningNumber();
     const entrantList = await fetchConfirmedEntrants();
-
-    if (!winningNumber || entrantList.length === 0) {
-      console.log("🚫 No valid winning number or entrants found.");
+    const validEntrants = entrantList.filter((entry) => entry.isValid === true);
+    
+    if (!winningNumber || validEntrants.length === 0) {
+      console.log("🚫 No valid winning number or verified entrants found.");
       return;
     }
 

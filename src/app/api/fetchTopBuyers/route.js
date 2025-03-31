@@ -2,30 +2,25 @@ import { firestore } from "@/utils/firebaseAdmin";
 
 export async function GET() {
   try {
-    const snapshot = await firestore.collection("purchasedTickets").get();
-    const buyerTotals = {};
+    const snapshot = await firestore.collection("topBuyerStats").get();
 
-    snapshot.forEach(doc => {
-      const data = doc.data();
-      const { username, ticketsBought } = data;
-
-      if (!username || typeof ticketsBought !== "number") return;
-
-      if (buyerTotals[username]) {
-        buyerTotals[username] += ticketsBought;
-      } else {
-        buyerTotals[username] = ticketsBought;
-      }
+    const stats = [];
+    snapshot.forEach((doc) => {
+      stats.push({ username: doc.id, totalTickets: doc.data().totalTickets });
     });
 
-    const sorted = Object.entries(buyerTotals)
-      .map(([username, tickets]) => ({ username, tickets }))
-      .sort((a, b) => b.tickets - a.tickets)
-      .slice(0, 5);
+    // Sort in descending order of totalTickets
+    stats.sort((a, b) => b.totalTickets - a.totalTickets);
 
-    return Response.json({ topBuyers: sorted });
+    return new Response(JSON.stringify({ topBuyerStats: stats }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
-    console.error("❌ Error in fetchTopBuyers API:", error);
-    return new Response("Error fetching top buyers", { status: 500 });
+    console.error("❌ Failed to fetch top buy stats:", error);
+    return new Response(JSON.stringify({ topBuyerStats: [] }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
