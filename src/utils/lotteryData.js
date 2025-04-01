@@ -331,7 +331,7 @@ export async function distributePrizes() {
     let prizeTransactions = [];
 
     // Prize calculation logic
-    entrantList.forEach(({ username, tickets, timestamp }) => {
+    validEntrants.forEach(({ username, tickets, timestamp }) => {
       let totalPrize = 0;
       let winningTickets = [];
 
