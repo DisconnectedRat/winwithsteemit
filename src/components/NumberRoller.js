@@ -157,7 +157,7 @@ const NumberRoller = () => {
 
   return (
     <div className="flex flex-col items-center">
-      <h2 className="text-lg font-semibold mb-5 text-gray-800">Pick Your Numbers</h2>
+      <h2 className="text-3xl font-extrabold text-center text-purple-800 mb-6 animate-pulse">Pick Your Numbers</h2>
 
       {/* Number Roller */}
       <div className="flex space-x-6">

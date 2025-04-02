@@ -125,6 +125,7 @@ const fetchTodaysWinner = async () => {
   // A) Sort 'pastWinnerList' to get Top 5 by 'amount'
   //
   const top5PastWinners = [...pastWinnerList]
+    .filter((w) => w.winningTickets?.length > 0 && (w.amount || 0) > 0)
     .sort((a, b) => (b.amount || 0) - (a.amount || 0))
     .slice(0, 5);
 
@@ -209,7 +210,8 @@ const fetchTodaysWinner = async () => {
         <div className="mt-8">
           <h2 className="text-2xl font-bold mb-4">🥇 Top 5 Winners</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {top5PastWinners.map((winner, index) => (
+            {top5PastWinners
+            .map((winner, index) => (
               <div
                 key={index}
                 className="bg-gradient-to-r from-yellow-100 to-yellow-200 border border-yellow-300 p-4 rounded-xl shadow-md hover:shadow-lg transition"
@@ -299,7 +301,9 @@ const fetchTodaysWinner = async () => {
           </thead>
           <tbody>
             {currentWinners && currentWinners.length > 0 ? (
-              currentWinners.map((winner, index) => (
+              [...currentWinners]
+              .sort((a, b) => (b.amount || 0) - (a.amount || 0))
+              .map((winner, index) => (
                 <tr
                   key={index}
                   className="text-center bg-gray-50 hover:bg-gray-200 transition-all"

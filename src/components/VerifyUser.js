@@ -77,7 +77,7 @@ const VerifyUser = ({ onUserVerified = () => {} }) => {
       >
         {loading ? "Verifying..." : "Verify Entry"}
       </button>
-      {message && <p className="mt-3 text-sm text-gray-700">{message}</p>}
+      {message && <p className="mt-3 text-sm text-white">{message}</p>}
     </div>
   );
 };

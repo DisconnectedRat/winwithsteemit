@@ -23,7 +23,7 @@ const TopBuys = () => {
 
   return (
     <div className="mt-6 text-center">
-      <h2 className="text-xl font-bold mb-2 text-gray-800">👥 Top Buys</h2>
+      <h2 className="text-xl font-bold mb-2 text-gray-800">👑 Ticket Titans </h2>
       <table className="w-full border-collapse border border-gray-300 mx-auto">
         <thead>
           <tr className="bg-gray-100">
@@ -37,7 +37,7 @@ const TopBuys = () => {
               <td colSpan="2" className="text-gray-500 py-4">No data available</td>
             </tr>
           ) : (
-            topBuyers.map((buyer, index) => (
+            topBuyers.slice(0, 5).map((buyer, index) => (
               <tr key={index} className="border-b">
                 <td className="border border-gray-800 px-4 py-2">@{buyer.username}</td>
                 <td className="border border-gray-800 px-4 py-2">{buyer.totalTickets}</td>

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import NumberRoller from "@/components/NumberRoller";
 import TopBuys from "@/components/TopBuys";
 import CountdownTimer from "@/components/CountdownTimer";
+import GiftCodeGenerator from "@/components/GiftCodeGenerator";
 
 export default function HomePage() {
   const [selectedTickets, setSelectedTickets] = useState([]);
@@ -28,11 +29,14 @@ export default function HomePage() {
         {/* 🎟️ Pick Your Numbers */}
         <NumberRoller onSelect={handleNumberSelection} />
 
+
+        {/* 🎁 Gift a Ticket */}
+        <GiftCodeGenerator />
+
         {/* ⏳ Next Draw Countdown - Bigger & Eye-catching */}
         <p className="text-6xl font-bold text-blue-700 tracking-wide">
         </p>
         <CountdownTimer />
-
 
         {/* 👥 Top Buyers Section - Improved Styling */}
         <div className="mt-5">
