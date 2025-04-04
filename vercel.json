@@ -3,6 +3,10 @@
     {
       "path": "/api/autoTriggerPrize",
       "schedule": "3 0 * * *"
+    },
+    {
+      "path": "/api/batchVerifyTickets",
+      "schedule": "59 23 * * *"
     }
   ]
 }

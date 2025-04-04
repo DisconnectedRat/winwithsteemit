@@ -95,14 +95,14 @@ const EntrantsList = () => {
               filteredEntrants.map((entry, index) => (
                 <tr key={index} className="border-t hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-800">@{entry.username}</td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-4 py-3 text-center text-gray-600">
                     {entry.ticketsBought !== undefined
                       ? entry.ticketsBought
                       : Array.isArray(entry.tickets)
                       ? entry.tickets.length
                       : 0}
                   </td>
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-4 py-3 text-center text-gray-600">
                     {entry.ticketNumbers !== undefined
                       ? entry.ticketNumbers
                       : Array.isArray(entry.tickets)

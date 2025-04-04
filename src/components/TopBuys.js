@@ -39,8 +39,8 @@ const TopBuys = () => {
           ) : (
             topBuyers.slice(0, 5).map((buyer, index) => (
               <tr key={index} className="border-b">
-                <td className="border border-gray-800 px-4 py-2">@{buyer.username}</td>
-                <td className="border border-gray-800 px-4 py-2">{buyer.totalTickets}</td>
+                <td className="border border-gray-800 px-4 py-2 text-gray-600">@{buyer.username}</td>
+                <td className="border border-gray-800 px-4 py-2 text-gray-600">{buyer.totalTickets}</td>
               </tr>
             ))
           )}

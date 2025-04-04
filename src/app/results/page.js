@@ -175,6 +175,7 @@ const fetchTodaysWinner = async () => {
           <p className="text-lg font-semibold text-black">Total Prize Distributed</p>
           <p className="text-xl font-bold text-blue-500">{totalPrize} STEEM</p>
         </div>
+        <div className="w-full flex justify-center mt-4"></div>
         <div className="p-4 bg-yellow-100 rounded-lg shadow-md text-center w-72">
           <p className="text-lg font-semibold text-yellow-900">🎯 Current Jackpot</p>
           <p className="text-2xl font-extrabold text-red-600">{jackpot} STEEM</p>
