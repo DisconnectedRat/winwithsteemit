@@ -60,20 +60,38 @@ const ResultsPage = () => {
     } else if (newJackpot < 100) {
       newJackpot = Math.min(newJackpot + 5, 100); // Increase by 5 STEEM daily
     }
-    
+    // Then update Firestore:
+      await firestore.collection("dailyConfig").doc("config").update({ jackpot: newJackpot });
+      
+    // And set local state if your page needs it
     setJackpot(newJackpot);
     setWinners(prizeDistribution);
   }, [jackpot]); // ✅ `jackpot` added as dependency
 
   const fetchPastResults = async () => {
-    // Simulate fetching past results (Replace with backend logic)
-    const mockResults = [
-      { date: "Mar 10", number: "547", winner: "@alice", amount: "100 STEEM" },
-      { date: "Mar 09", number: "362", winner: "@bob", amount: "50 STEEM" },
-      { date: "Mar 08", number: "918", winner: "@charlie", amount: "40 STEEM" },
-    ];
-    setPastResults(mockResults);
   };
+
+    // PART of daily result logic or a function that runs after winners are computed
+    useEffect(() => {
+      if (jackpot !== undefined) {
+    // We just computed newJackpot, so let's persist it
+        const updateJackpotInFirestore = async () => {
+          try {
+            await fetch("/api/updateJackpot", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ newJackpot: jackpot }) // pass the final jackpot
+            });
+            console.log("✅ Jackpot updated in Firestore!");
+          } catch (err) {
+            console.error("❌ Error updating jackpot:", err);
+          }
+        };
+
+        updateJackpotInFirestore();
+      }
+    }, [jackpot]);
+
 
   return (
     <div className="container mx-auto p-4">

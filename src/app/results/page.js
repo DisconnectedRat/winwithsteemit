@@ -64,6 +64,7 @@ const fetchTodaysWinner = async () => {
       setTodaysWinners(sorted);
 
       console.log("🔥 Winners returned from API (Today/Yesterday):", sorted);
+      
       // ✅ Fetch current jackpot from Firestore config
       const configRes = await fetch("/api/fetchDailyConfig");
       const configData = await configRes.json();
@@ -170,21 +171,25 @@ const fetchTodaysWinner = async () => {
       </div>
 
       {/* Prize & Jackpot */}
-      <div className="mt-6 flex flex-col sm:flex-row justify-center gap-10">
-        <div className="p-4 bg-gray-100 rounded-lg shadow-md text-center">
+      <div className="mt-6 flex flex-col gap-6 sm:flex-row sm:gap-10 justify-center items-center">
+        {/* Card #1 */}
+        <div className="p-4 bg-gray-100 rounded-lg shadow-md text-center w-72">
           <p className="text-lg font-semibold text-black">Total Prize Distributed</p>
           <p className="text-xl font-bold text-blue-500">{totalPrize} STEEM</p>
         </div>
-        <div className="w-full flex justify-center mt-4"></div>
+
+        {/* Card #2 (Jackpot) */}
         <div className="p-4 bg-yellow-100 rounded-lg shadow-md text-center w-72">
           <p className="text-lg font-semibold text-yellow-900">🎯 Current Jackpot</p>
           <p className="text-2xl font-extrabold text-red-600">{jackpot} STEEM</p>
-         </div>
-        <div className="p-4 bg-gray-100 rounded-lg shadow-md text-center">
+        </div>
+
+        {/* Card #3 (Latest Jackpot Winner) */}
+        <div className="p-4 bg-gray-100 rounded-lg shadow-md text-center w-72">
           <p className="text-lg font-semibold text-black">Latest Jackpot Winner</p>
           {latestWinner ? (
             <p className="text-xl font-bold text-blue-500">
-              {latestWinner.username} - {latestWinner.amount} STEEM
+              {latestWinner.username} – {latestWinner.amount} STEEM
             </p>
           ) : (
             <p className="text-gray-500">No Jackpot Winner Yet</p>
