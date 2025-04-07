@@ -328,15 +328,28 @@ const NumberRoller = () => {
                   ? "🎉 You used a promo code. Good luck in tomorrow’s draw!"
                   : "Kindly follow the Payment Instructions to complete the payment through your wallet."}
               </p>
-              <a
-                href="https://winwithsteemit.com/entrants"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition"
-              >
-                🔎 View My Ticket
-              </a>
-            </div>
+                {/* 1) GO TO MY WALLET BUTTON */}
+                <a
+                  href={`https://steemitwallet.com/@${username
+                    .trim()
+                    .replace(/^@/, "")}/transfers`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition mr-2"
+                >
+                  💰 Go to My Wallet
+                </a>
+
+                {/* 2) VIEW MY TICKET BUTTON */}
+                <a
+                  href="https://winwithsteemit.com/entrants"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition"
+                >
+                  🔎 View My Ticket
+                </a>
+              </div>
           ) : (
             submitMessage && (
               <p className="mt-3 text-center text-sm text-red-600">{submitMessage}</p>

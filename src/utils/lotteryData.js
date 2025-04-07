@@ -407,6 +407,14 @@ export async function distributePrizes() {
     console.log("prizeTransactions: ", JSON.stringify(prizeTransactions, null, 2));
     await updateTotalPrize(prizeTransactions);
     console.log("✅ distributePrizes completed. Total prize updated.");
+
+    //  MARK DISTRIBUTION AS COMPLETE
+    await logRef.set({
+    distributed: true,
+    timestamp: new Date().toISOString(),
+    });
+    console.log(`✅ Marked ${today} distribution as complete in "prizeLog".`);
+
   } catch (error) {
     console.error("❌ Error in prize distribution:", error);
   }
