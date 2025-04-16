@@ -182,35 +182,36 @@ const GiftCodeGenerator = () => {
         {/* If Gift Code is generated, display it + Payment instructions */}
         {giftCode && (
           <div className="animate-fade-in mt-4 text-center">
-            <p className="mb-2 text-gray-600">
-              Code generated:{" "}
-              <strong className="font-mono">{giftCode}</strong>
-            </p>
-            <button
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md transition-all mr-2"
-              onClick={handleCopyCode}
-            >
-              📋 {copiedCode ? "Copied!" : "Copy Code"}
-            </button>
 
-            <div className="mt-4 p-3 bg-white border rounded shadow-sm">
-              {/* Payment Info */}
-              <p className="text-sm text-gray-700 mb-2">
-                <strong>Now send {ticketCount} STEEM</strong> to{" "}
-                <span className="font-bold">@winwithsteemit</span> <br />
-                <strong>Memo:</strong>{" "}
-                <span className="font-mono">Gift {giftCode}</span>
+            {/* Updated Payment Instruction Box */}
+            <div className="mt-6 p-4 bg-purple-50 border border-purple-200 rounded-xl shadow-sm text-left text-sm">
+              <p className="text-base text-gray-700 mb-2 font-semibold">
+                Now send <span className="text-purple-700">{ticketCount} STEEM</span> to <span className="font-bold">@winwithsteemit</span> and <span className="font-bold text-purple-700">copy the code as your memo</span>:
               </p>
+
+              <p className="mb-2 text-gray-700">
+                Memo: <span className="font-mono text-purple-700">Gift {giftCode}</span>
+              </p>
+
               <button
-                className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-1 rounded-md"
-                onClick={handleCopyMemo}
+                onClick={handleCopyCode}
+                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md shadow transition-all"
               >
-                📋 {copiedMemo ? "Memo Copied!" : "Copy Memo"}
+                📋 {copiedCode ? "Code Copied!" : "Copy Code"}
               </button>
-              <p className="text-xs text-gray-500 mt-2">
-                Once we verify your payment, the code will be activated 
-                for {ticketCount} ticket(s).<br />
-                We’ll also notify {recipientUsername.trim()} about this gift.
+
+              <a
+                href={`https://steemitwallet.com/@${giverUsername.trim().replace(/^@/, "")}/transfers`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 ml-3 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-md shadow transition-all"
+              >
+                💰 Go to My Wallet
+              </a>
+
+              <p className="text-xs text-gray-500 mt-4 leading-relaxed">
+                Once we verify your payment, this code will be activated for <strong>{ticketCount}</strong> ticket(s).<br />
+                We’ll also notify <strong>{recipientUsername.trim()}</strong> about this gift.
               </p>
             </div>
           </div>
