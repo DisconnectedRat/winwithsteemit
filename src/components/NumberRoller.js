@@ -27,6 +27,10 @@ const NumberRoller = () => {
   const [showPromoCodeInput, setShowPromoCodeInput] = useState(false);
   const [promoCode, setPromoCode] = useState("");
 
+  // Gift Code Feature
+  const [showGiftCodeInput, setShowGiftCodeInput] = useState(false);
+  const [giftCode, setGiftCode] = useState("");
+
   // ▓▓ Ticket selection feedback
   const [ticketMessage, setTicketMessage] = useState("");
 
@@ -100,6 +104,30 @@ const NumberRoller = () => {
     }
   
     try {
+      // 🔍 If GIFT CODE is entered, skip normal store logic:
+      if (giftCode) {
+      // 1) Redeem Gift Code with the selected tickets
+        const redeemRes = await fetch("/api/redeemGiftCode", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+          giftCode: giftCode.trim(),
+          username: cleanUsername,
+          tickets: selectedTickets, // They must pick EXACTLY the # of tickets that were gifted
+          }),
+        });
+        const redeemData = await redeemRes.json();
+       
+      if (redeemData.error) {
+        setSubmitMessage(`❌ ${redeemData.error}`);
+      return;
+        } else {
+        etSubmitMessage("success");
+        setIsSubmitted(true);
+      return;
+        }
+      }
+
       // 🔍 If promoCode is entered, validate it against Firestore
       if (promoCode) {
         const res = await fetch("/api/validatePromo", {
@@ -251,28 +279,57 @@ const NumberRoller = () => {
             </button>
           </div>
 
-          {/* Promo Code Toggle */}
-          {!showPromoCodeInput ? (
+        {/* Promo Code Toggle */}
+        {!showPromoCodeInput && !showGiftCodeInput ? (
+          <div className="flex gap-2 mt-4">
             <button
-              className="mt-4 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded transition"
+              className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded transition"
               onClick={() => setShowPromoCodeInput(true)}
               disabled={isSubmitted}
             >
               Enter Promo Code
             </button>
-          ) : (
-            <div className="mt-4">
-              <label className="block text-gray-600 mb-1">Promo Code (optional):</label>
-              <input
-                type="text"
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value)}
-                placeholder="e.g. STEEM-12345"
-                className="border px-3 py-2 rounded-md w-full text-gray-700"
-                disabled={isSubmitted}
-              />
-            </div>
-          )}
+
+            <button
+              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition"
+              onClick={() => setShowGiftCodeInput(true)}
+              disabled={isSubmitted}
+            >
+              Redeem Gift Code
+            </button>
+          </div>
+        ) : null}
+
+        {/* Promo Code Input */}
+        {showPromoCodeInput && (
+          <div className="mt-4">
+            <label className="block text-gray-600 mb-1">Promo Code (optional):</label>
+            <input
+              type="text"
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value)}
+              placeholder="e.g. STEEM-12345"
+              className="border px-3 py-2 rounded-md w-full text-gray-700"
+              disabled={isSubmitted}
+            />
+          </div>
+        )}
+
+        {/* Gift Code Input */}
+        {showGiftCodeInput && (
+          <div className="mt-4">
+            <label className="block text-gray-600 mb-1">Gift Code:</label>
+            <input
+              type="text"
+              value={giftCode}
+              onChange={(e) => setGiftCode(e.target.value)}
+              placeholder="e.g. GIFT-ABCD"
+              className="border px-3 py-2 rounded-md w-full text-gray-700"
+              disabled={isSubmitted}
+            />
+          </div>
+        )}
+
 
           {/* Memo (or Promo Code) */}
           <div className="mt-4">

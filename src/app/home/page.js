@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import NumberRoller from "@/components/NumberRoller";
 import TopBuys from "@/components/TopBuys";
 import CountdownTimer from "@/components/CountdownTimer";
-import GiftCodeGenerator from "@/components/GiftCodeGenerator";
+import GiftTicketCollapsible from "@/components/GiftTicketCollapsible";
 
 export default function HomePage() {
   const [selectedTickets, setSelectedTickets] = useState([]);
@@ -31,7 +31,7 @@ export default function HomePage() {
 
 
         {/* 🎁 Gift a Ticket */}
-        <GiftCodeGenerator />
+        <GiftTicketCollapsible />
 
         {/* ⏳ Next Draw Countdown - Bigger & Eye-catching */}
         <p className="text-6xl font-bold text-blue-700 tracking-wide">
