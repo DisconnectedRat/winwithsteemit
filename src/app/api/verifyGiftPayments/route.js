@@ -58,7 +58,9 @@ export async function GET() {
         });
 
         // 🔔 Notify the recipient via comment
-        await postSteemitComment(gift.recipient, gift.code, gift.reason, gift.giver);
+        console.log(`📨 Posting comment for @${gift.recipient}...`);
+        const commentResult = await postSteemitComment(gift.recipient, gift.code, gift.reason, gift.giver);
+        console.log("🧾 Comment Result:", commentResult);
 
         updatedCount++;
         console.log(`✅ Verified payment for: ${gift.code}`);
