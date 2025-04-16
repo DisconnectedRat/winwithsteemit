@@ -88,6 +88,9 @@ export async function POST(req) {
       // 4) Mark user’s Firestore doc as valid
       await userEntry.ref.update({ isValid: true });
       console.log("✅ Payment matched and user marked as valid");
+      // Send Steemit confirmation comment
+      await postPurchaseComment(username, tickets);
+
       return NextResponse.json({ success: true });
     } else {
       console.warn("❌ No matching payment found for memo:", expectedMemo);

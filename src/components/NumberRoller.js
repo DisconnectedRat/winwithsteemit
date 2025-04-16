@@ -337,12 +337,12 @@ const NumberRoller = () => {
             <div className="flex items-center">
               <input
                 type="text"
-                value={promoCode || memoGenerated}
+                value={promoCode || giftCode || memoGenerated}
                 readOnly
                 className="border px-3 py-2 rounded-md w-full text-gray-700"
               />
               <button
-                onClick={() => copyToClipboard(promoCode || memoGenerated, setCopyMemoText)}
+                onClick={() => copyToClipboard(promoCode || giftCode || memoGenerated, setCopyMemoText)}
                 className="ml-2 px-3 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition"
               >
                 {copyMemoText}

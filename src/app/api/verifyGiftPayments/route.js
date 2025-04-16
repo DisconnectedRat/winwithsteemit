@@ -41,11 +41,12 @@ export async function GET() {
 
     // Step 3: Match each giftCode against incoming memos
     for (const gift of unpaidGiftCodes) {
-      const expectedMemo = `${MEMO_PREFIX} ${gift.code}`;
+      const expectedMemo = gift.code;
 
       const match = transactions.find(
         ([timestamp, from, to, amount, currency, memo]) =>
-          memo === expectedMemo && parseInt(amount) >= parseInt(gift.ticketCount)
+          memo === expectedMemo && parseFloat(amount) >= gift.ticketCount &&
+          from.toLowerCase() === gift.giver.toLowerCase()
       );
 
       if (match) {
@@ -55,6 +56,9 @@ export async function GET() {
           paidAt: new Date().toISOString(),
           payer: match[1], // from
         });
+
+        // 🔔 Notify the recipient via comment
+        await postSteemitComment(gift.recipient, gift.code, gift.reason, gift.giver);
 
         updatedCount++;
         console.log(`✅ Verified payment for: ${gift.code}`);

@@ -20,6 +20,7 @@ export async function POST(request) {
       used: false,
       paid: false,
       ticketCount: ticketCount, // store how many tickets
+      code,
       createdAt: new Date().toISOString()
     });
 
