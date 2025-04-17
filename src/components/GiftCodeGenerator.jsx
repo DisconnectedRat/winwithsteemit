@@ -190,7 +190,7 @@ const GiftCodeGenerator = () => {
               </p>
 
               <p className="mb-2 text-gray-700">
-                Memo: <span className="font-mono text-purple-700">Gift {giftCode}</span>
+                Memo: <span className="font-mono text-purple-700"> {giftCode}</span>
               </p>
 
               <button

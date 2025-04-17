@@ -3,6 +3,7 @@
 import { NextResponse } from "next/server";
 import { firestore } from "@/utils/firebaseAdmin";
 import axios from "axios";
+import { postSteemitComment } from "@/utils/steemitCommentBot"; 
 
 const STEEM_ACCOUNT = "winwithsteemit";
 const MEMO_PREFIX = "Gift";

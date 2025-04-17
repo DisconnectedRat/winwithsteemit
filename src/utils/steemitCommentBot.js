@@ -28,7 +28,7 @@ export async function postSteemitComment(recipient, giftCode, reason = "", giver
   let parentPermlink = "gift-lottery";
 
   try {
-    const [latestPost] = await client.database.getDiscussions("blog", {
+    const [latestPost] = await client.database.getDiscussions("created", {
       tag: recipient,
       limit: 1,
     });
