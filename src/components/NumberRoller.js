@@ -122,7 +122,7 @@ const NumberRoller = () => {
         setSubmitMessage(`❌ ${redeemData.error}`);
       return;
         } else {
-        etSubmitMessage("success");
+        setSubmitMessage("success");
         setIsSubmitted(true);
       return;
         }

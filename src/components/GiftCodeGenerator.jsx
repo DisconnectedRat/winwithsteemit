@@ -77,7 +77,7 @@ const GiftCodeGenerator = () => {
 
   function handleCopyMemo() {
     if (!giftCode) return;
-    const memo = `Gift ${giftCode}`;
+    const memo = `${giftCode}`;
     navigator.clipboard.writeText(memo);
     setCopiedMemo(true);
     setTimeout(() => setCopiedMemo(false), 2000);
