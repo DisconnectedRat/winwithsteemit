@@ -118,7 +118,7 @@ const NumberRoller = () => {
         });
         const redeemData = await redeemRes.json();
        
-      if (redeemData.error) {
+      if (!redeemRes.ok) {
         setSubmitMessage(`❌ ${redeemData.error}`);
       return;
         } else {
@@ -379,12 +379,14 @@ const NumberRoller = () => {
           {/* Submission Message / Success */}
           {submitMessage === "success" ? (
             <div className="mt-4 text-center">
-              <p className="text-green-700 font-semibold mb-2">
-                Thank you @{username.trim().replace(/^@/, "")}, your entry is recorded!{" "}
-                {promoCode
-                  ? "🎉 You used a promo code. Good luck in tomorrow’s draw!"
-                  : "Kindly follow the Payment Instructions to complete the payment through your wallet."}
-              </p>
+                <p className="text-green-700 font-semibold mb-2">
+                  Thank you @{username.trim().replace(/^@/, "")}, your entry is recorded!{" "}
+                  {giftCode
+                    ? "🎁 You used a gift code — someone special is cheering for your win! Best of luck 🍀"
+                    : promoCode
+                    ? "🎉 You used a promo code. Good luck in tomorrow’s draw!"
+                    : "Kindly follow the Payment Instructions to complete the payment through your wallet."}
+                </p>
                 {/* 1) GO TO MY WALLET BUTTON */}
                 <a
                   href={`https://steemitwallet.com/@${username

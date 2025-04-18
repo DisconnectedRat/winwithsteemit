@@ -98,13 +98,8 @@ export async function POST(req) {
         }
       });
 
-    return new Response(
-      JSON.stringify({ success: true, docId: docRef.id }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return NextResponse.json({ success: true, docId: docRef.id });
+
   } catch (error) {
     console.error("❌ Error in storeTicket:", error);
     return new Response(
