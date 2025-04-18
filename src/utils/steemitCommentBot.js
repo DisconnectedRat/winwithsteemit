@@ -20,7 +20,7 @@ const key = dsteem.PrivateKey.fromString(POSTING_KEY);
 /**
  * 🎁 Gift Notification
  */
-export async function postSteemitComment(recipient, giftCode, reason = "", giver = "") {
+export async function postSteemitComment(recipient, giftCode, reason = "", giver = "", ticketCount = 1) {
   const author = BOT_USERNAME;
   const permlink = "gift-" + Math.random().toString(36).substr(2, 6);
 
@@ -42,7 +42,8 @@ export async function postSteemitComment(recipient, giftCode, reason = "", giver
 
   const title = `You've Been Gifted a Ticket! 🎁`;
   const reasonText = reason ? `🎁 *@${giver} says:* ${reason}\n\n` : "";
-  const body = `Hey @${recipient},\n\nYou have been gifted a lottery ticket from @${giver}!  \nUse code: \`${giftCode}\` to redeem it.\n\n${reasonText}To redeem go to: https://winwithsteemit.com/`;
+  const plural = ticketCount > 1 ? "tickets" : "ticket";
+  const body = `Hey @${recipient},\n\nYou have been gifted **${ticketCount} lottery ${plural}** from @${giver}!  \nUse code: \`${giftCode}\` to redeem ${ticketCount > 1 ? "them" : "it"}. …`;
 
   const commentOp = [
     "comment",
