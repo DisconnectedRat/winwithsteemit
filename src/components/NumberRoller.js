@@ -158,7 +158,7 @@ const NumberRoller = () => {
       });
   
       const result = await response.json();
-      if (result.success) {
+      if (!result.error) {
         setSubmitMessage("success");
         setIsSubmitted(true);
       } else {

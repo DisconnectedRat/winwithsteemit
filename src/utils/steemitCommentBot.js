@@ -43,7 +43,7 @@ export async function postSteemitComment(recipient, giftCode, reason = "", giver
   const title = `You've Been Gifted a Ticket! 🎁`;
   const reasonText = reason ? `🎁 *@${giver} says:* ${reason}\n\n` : "";
   const plural = ticketCount > 1 ? "tickets" : "ticket";
-  const body = `Hey @${recipient},\n\nYou have been gifted **${ticketCount} lottery ${plural}** from @${giver}!  \nUse code: \`${giftCode}\` to redeem ${ticketCount > 1 ? "them" : "it"}. \n\n${reasonText}To redeem go to: https://winwithsteemit.com/;`;
+  const body = `Hey @${recipient},\n\nYou have been gifted **${ticketCount} lottery ${plural}** from @${giver}!  \nUse code: \`${giftCode}\` to redeem ${ticketCount > 1 ? "them" : "it"}. \n\n${reasonText}To redeem go to: https://winwithsteemit.com`;
 
   const commentOp = [
     "comment",
