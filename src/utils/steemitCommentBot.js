@@ -26,18 +26,27 @@ export async function postSteemitComment(recipient, giftCode, reason = "", giver
 
   let parentAuthor = "";
   let parentPermlink = "gift-lottery";
+  let discussions = [];
 
   try {
-    const [latestPost] = await client.database.getDiscussions("created", {
+    discussions = await client.database.getDiscussions("blog", {
       tag: recipient,
-      limit: 1,
+      limit: 10,
     });
-    if (latestPost?.author && latestPost?.permlink) {
-      parentAuthor = latestPost.author;
-      parentPermlink = latestPost.permlink;
-    }
+
   } catch (err) {
     console.warn("⚠️ Could not fetch latest post for:", recipient);
+  }
+
+  const latestOriginal = discussions.find(post => post.parent_author === "");
+
+  if (latestOriginal) {
+    parentAuthor   = latestOriginal.author;
+    parentPermlink = latestOriginal.permlink;
+  } else {
+    // Fallback if user has only resteemed
+    console.warn("No original post found—skipping comment for", recipient);
+    return { success: false, skipped: true };
   }
 
   const title = `You've Been Gifted a Ticket! 🎁`;
@@ -75,13 +84,38 @@ export async function postPurchaseComment(username, tickets = []) {
   const author = BOT_USERNAME;
   const permlink = "ticket-" + Math.random().toString(36).substr(2, 6);
 
-  const parentAuthor = "";
-  const parentPermlink = "lottery-tickets";
+  let discussions = [];
+  try {
+    discussions = await client.database.getDiscussions("blog", {
+      tag: username,
+      limit: 10,
+    });
+
+  } catch (err) {
+    console.warn("⚠️ Could not fetch blog feed for:", username, err);
+  }
+
+  // Pick first with no parent_author → that’s an original post
+  const latestOriginal = discussions.find(post => post.parent_author === "");
+    
+  let parentAuthor, parentPermlink;
+    if (latestOriginal) {
+      parentAuthor   = latestOriginal.author;
+      parentPermlink = latestOriginal.permlink;
+    } else {
+
+  // fallback if they’ve only resteemed
+      console.warn("No original post found—skipping comment for", recipient);
+      return { success: false, skipped: true };
+    }
+
+  const count      = tickets.length;
+  const ticketWord = count > 1 ? "tickets are" : "ticket is";
+  const ticketList = tickets.map(t => `\`${t}\``).join(", ");
 
   const title = `Thanks for Your Lottery Entry! 🎉`;
-  const ticketList = tickets.map(t => `\`${t}\``).join(", ");
   const body = `Hi @${username},\n\n` +
-    `Your Steemit Lottery tickets are confirmed: ${ticketList}.\n\n` +
+    `Your Steemit Lottery ${ticketWord} confirmed: ${ticketList}.\n\n` +
     `Wishing you the best of luck in tomorrow’s draw! 🍀\n` +
     `Check results 👉 https://winwithsteemit.com/results\n\n` +
     `– The WinWithSteemit Team 🎯`;

@@ -109,7 +109,7 @@ const EntrantsList = () => {
                       ? entry.tickets.join(", ")
                       : "N/A"}
                   </td>
-                  <td className="px-4 py-3 text-center text-sm text-gray-600">{entry.memo}</td>
+                  <td className="px-4 py-3 text-center text-sm text-gray-600">{entry.memo || entry.giftCode || "-"}</td>
                   <td className="px-4 py-3 text-center">
                     {entry.isValid === true ? (
                       <span className="text-green-600 font-bold">✅ Confirmed</span>
